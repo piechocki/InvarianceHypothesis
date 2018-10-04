@@ -13,7 +13,6 @@ for i in range(0, len(files)):
     date = ""
     first_row = 0
     last_row = 0
-    bookmark = 0
 
     while True:
         first_row = 0 if last_row == 0 else last_row + 1
