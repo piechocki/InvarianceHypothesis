@@ -1,4 +1,3 @@
-# -*- coding: iso-8859-1 -*-
 import pandas as pd
 
 path = "C:/Users/marti/OneDrive/Documents/OLAT/Master/4. Semester/Masterarbeit/Testdaten/DAX_20170925.csv"

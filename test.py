@@ -1,4 +1,3 @@
-# -*- coding: iso-8859-1 -*-
 import pandas as pd
 
 header = ("#RIC,Date[G],Time[G],GMT Offset,Type,L1-BidPrice,L1-BidSize,L1-AskPrice,L1-AskSize,L2-BidPrice,"
