@@ -7,4 +7,5 @@ tickers = pd.read_csv(path, usecols=["#RIC"])["#RIC"].unique()
 data = {}
 for ticker in tickers:
     data[ticker] = iter_csv[iter_csv["#RIC"] == ticker]
-print(data["VOWG_p.DE"])
+    data[ticker] = data[ticker][data[ticker]["Type"] == "Trade"]
+print(data["VOWG_p.DE"]["Type"])
