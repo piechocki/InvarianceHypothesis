@@ -105,10 +105,19 @@ venv.bak/
 
 
 
+# addtional exceptions for latex files:
+
+# Ignore all files in "LaTeX" folders
+LaTeX/*
+
+# LaTeX .tex files and files in the /images/ folder
+!LaTeX/*.tex
+!LaTeX/*.sty
+!LaTeX/input
 
 
 
-# exceptions for projects in Visual Studio
+# addtional exceptions for projects in Visual Studio:
 
 # User-specific files
 *.rsuser
