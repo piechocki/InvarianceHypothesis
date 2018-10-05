@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{18cec60b-feff-432e-ba9a-b29a6ef8d108}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>prototype2.py</StartupFile>
+    <StartupFile>program.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -19,13 +19,21 @@
     <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="prototype.py" />
-    <Compile Include="prototype2.py" />
-    <Compile Include="test.py" />
-    <Compile Include="utility.py" />
+    <Compile Include="program.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Prototypes\prototype.py" />
+    <Compile Include="Common\preprocessing.py" />
+    <Compile Include="Prototypes\test.py" />
+    <Compile Include="Util\pandas_helper.py" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="CondaEnv|CondaEnv|InvarianceHypothesis" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Common\" />
+    <Folder Include="Prototypes\" />
+    <Folder Include="Util\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
 </Project>
