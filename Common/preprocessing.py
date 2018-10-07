@@ -5,18 +5,15 @@ import Util.pandas_helper as pandas_helper
 
 class PreProcessor:
 
-    def __init__(self, input_folder):
+    def __init__(self, input_folder, additional_filter = ""):
 
         self.input_folder = input_folder if input_folder[-1:] == "/" else input_folder + "/"
         self.files = []
         for file in os.listdir(self.input_folder):
-            if file.endswith(".csv.gz") and ".TQ_" in file:
+            if file.endswith(".csv.gz") and additional_filter in file:
                 self.files.append(file)
         self.rows = {}
         self.aggregations = pandas_helper.get_empty_aggregation()
-        # .BS_
-        # .TQ_
-        # .CHI_
     def init_rows_per_date(self):
 
         rows = {}
@@ -41,9 +38,11 @@ class PreProcessor:
     def get_filtered_dataframe(self, df):
         
         df.query("Type=='Trade'", inplace=True)
-        #df.query("Qualifiers==' [ACT_FLAG1]'", inplace=True)
+        df.query("Qualifiers.str.startswith(' [ACT_FLAG1]')", inplace=True)
         df.loc[:,"Price"] = df["Price"].astype(float)
         df.loc[:,"Volume"] = df["Volume"].astype(int)
+        df.loc[:,"Time[G]"] = pandas_helper.to_datetime(df["Time[G]"])
+        #df.reset_index(inplace=True, drop=True)
         return df
 
     def get_aggregations(self):

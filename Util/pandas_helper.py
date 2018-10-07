@@ -16,7 +16,7 @@ converters=None #{'Price': n, 'Volume': n}
 def get_dates_with_first_row(source):
 
     chunksize = 5000
-    reader = pd.read_csv(source, iterator=True, engine="c", low_memory = False, chunksize=chunksize, header=0, compression="gzip", na_filter=False, usecols=["Date[G]"])
+    reader = pd.read_csv(source, iterator=True, engine="c", low_memory=False, chunksize=chunksize, header=0, compression="gzip", na_filter=False, usecols=["Date[G]"])
     dates = {}
     date = ""
     for row in reader:
@@ -30,46 +30,68 @@ def get_dates_with_first_row(source):
 
 def get_dataframe_by_rows(source, first_row, last_row):
     
-    return pd.read_csv(source, compression=compression, header=header, sep=',', quotechar='"', nrows=(last_row-first_row+1 if last_row > 0 else None), na_filter=na_filter, low_memory=low_memory, names=names, engine=engine, skiprows=first_row-1, converters=converters)
-
+    skiprows = first_row + 1
+    nrows = (last_row - first_row + 1) if last_row > 0 else None
+    return pd.read_csv(source, engine="c", header=None, compression="gzip", na_filter=False, nrows=nrows, skiprows=skiprows, names=names, converters=converters, low_memory=False)
+    
 def get_empty_aggregation():
 
     return pd.DataFrame({
         'ticker': [],
         'date': [],
         'V': [],
-        'sigma': [],
+        'sigma_r': [],
+        'sigma_p': [],
         'W': [],
+        'p': [],
         'P': [],
         'N': [],
+        'x': [],
         'X': []
         })
 
 def get_new_aggregation(df):
     
-    print(df["Date[G]"].iloc[0])
-    print(df["Date[G]"].iloc[-1])
     ticker = df["#RIC"].iloc[0]
     date = str(df["Date[G]"].iloc[0])
+
     df["V"] = df["Price"] * df["Volume"]
     V = df["V"].sum()
-    sigma = df["Price"].sem()
-    W = V * sigma
+
+    df["Price-1"] = df["Price"].shift(1)
+    df["Return"] = df["Price"]/df["Price-1"]
+    sigma_r = df["Return"].sem()
+
+    sigma_p = df["Price"].sem()
+    W = V * sigma_r
     P = df["Price"].iloc[-1]
     N = len(df)
-    X = df["Volume"].mean()
+    x = df["Volume"].mean()
+    X = df["Volume"].sum()
+
+    df["Time[G]+1"] = df["Time[G]"].shift(-1)
+    df["Time delta"] = (df["Time[G]+1"]-df["Time[G]"]).astype('timedelta64[ms]')    
+    df["Time delta * P"] = df["Time delta"] * df["Price"]
+    p = df["Time delta * P"].sum() / df["Time delta"].sum()
 
     return pd.DataFrame({
         'ticker': [ticker],
         'date': [date],
         'V': [V],
-        'sigma': [sigma],
+        'sigma_r': [sigma_r],
+        'sigma_p': [sigma_p],
         'W': [W],
+        'p': [p],
         'P': [P],
         'N': [N],
+        'x': [x],
         'X': [X]
         })
 
 def concat_dfs(df1, df2):
     
     return pd.concat([df1, df2])
+
+def to_datetime(df):
+    
+    return pd.to_datetime(df) #astype(datetime)
