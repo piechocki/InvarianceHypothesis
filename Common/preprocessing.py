@@ -24,13 +24,16 @@ class PreProcessor:
             rows[ticker] = pandas_helper.get_dates_with_first_row(source)                
         self.rows = rows
 
-    def get_dataframe_per_date(self, ticker, date):
+    def get_dataframe_per_date(self, ticker, date, date_next):
         
+        if self.rows is None:
+            return None
         r = re.compile(r"(\w*)_" + ticker + "_(\w*)")
         file = list(filter(r.match, self.files))[0]
         source = self.input_folder + file
-        rows = self.rows.get(ticker, None).get(date, None)
-        return None if rows is None else pandas_helper.get_dataframe_by_rows(source, rows[0], rows[1])
+        first_row = self.rows.get(ticker, None).get(date, None)
+        last_row = (self.rows.get(ticker, None).get(date_next, None) - 1) if date_next is not None else (-1)
+        return pandas_helper.get_dataframe_by_rows(source, first_row, last_row)
 
     def get_filtered_dataframe(self, df):
         
@@ -39,6 +42,18 @@ class PreProcessor:
         df.loc[:,"Price"] = df["Price"].astype(float)
         df.loc[:,"Volume"] = df["Volume"].astype(int)
         return df
+
+    def get_aggregations(self):
+
+        for i in range(len(self.rows)):
+            ticker = list(self.rows)[i]
+            for j in range(len(self.rows[ticker])):
+                print("Processing date " + str(j+1) + " of " + str(len(self.rows[ticker])) + " in file " + str(i+1) + " of " + str(len(self.rows)) + " ...")
+                date = list(self.rows[ticker])[j]
+                date_next = list(self.rows[ticker])[j+1] if j+1 < len(self.rows[ticker]) else None
+                df = self.get_dataframe_per_date(ticker, date, date_next)
+                df = self.get_filtered_dataframe(df)
+                self.get_aggregation(df)
 
     def get_aggregation(self, df):
 
@@ -57,3 +72,7 @@ class PreProcessor:
         
         f = open("rows.json")
         self.rows = json.load(f)
+
+    def save_aggregations_to_csv(self):
+
+        self.aggregations.to_csv("aggregations.csv")

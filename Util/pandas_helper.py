@@ -11,7 +11,7 @@ engine = "c"
 #i = lambda x: int(x)
 #n = lambda x: pd.to_numeric(x)
 #d = lambda x: pd.to_datetime(x)
-#converters=None #{'Price': n, 'Volume': n}
+converters=None #{'Price': n, 'Volume': n}
 
 #def get_date_with_last_row(source, first_row):
 
@@ -55,7 +55,7 @@ def get_dates_with_first_row(source):
 
 def get_dataframe_by_rows(source, first_row, last_row):
     
-    return pd.read_csv(source, compression=compression, header=header, sep=',', quotechar='"', nrows=last_row-first_row+1, na_filter=na_filter, low_memory=low_memory, names=names, engine=engine, skiprows=first_row-1, converters=converters)
+    return pd.read_csv(source, compression=compression, header=header, sep=',', quotechar='"', nrows=(last_row-first_row+1 if last_row > 0 else None), na_filter=na_filter, low_memory=low_memory, names=names, engine=engine, skiprows=first_row-1, converters=converters)
 
 def get_empty_aggregation():
 
@@ -72,6 +72,8 @@ def get_empty_aggregation():
 
 def get_new_aggregation(df):
     
+    print(df["Date[G]"].iloc[0])
+    print(df["Date[G]"].iloc[-1])
     ticker = df["#RIC"].iloc[0]
     date = str(df["Date[G]"].iloc[0])
     df["V"] = df["Price"] * df["Volume"]
