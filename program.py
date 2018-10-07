@@ -2,7 +2,7 @@ import Common.preprocessing as preprocessing
 
 if __name__ == "__main__":
 
-    input_folder = "C:/Users/marti/OneDrive/Documents/OLAT/Master/4. Semester/Masterarbeit/Daten/DAX Xetra"
+    input_folder = "C:/Users/marti/OneDrive/Documents/OLAT/Master/4. Semester/Masterarbeit/Daten/DAX MTF"
     pp = preprocessing.PreProcessor(input_folder)
 
     #pp.init_rows_per_date()

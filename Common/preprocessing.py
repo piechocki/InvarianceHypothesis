@@ -10,15 +10,18 @@ class PreProcessor:
         self.input_folder = input_folder if input_folder[-1:] == "/" else input_folder + "/"
         self.files = []
         for file in os.listdir(self.input_folder):
-            if file.endswith(".csv.gz"):
+            if file.endswith(".csv.gz") and ".TQ_" in file:
                 self.files.append(file)
         self.rows = {}
         self.aggregations = pandas_helper.get_empty_aggregation()
-
+        # .BS_
+        # .TQ_
+        # .CHI_
     def init_rows_per_date(self):
 
         rows = {}
         for i in range(len(self.files)):
+            print("Processing file " + str(i+1) + " of " + str(len(self.files)) + " ...")
             source = self.input_folder + self.files[i]
             ticker = self.files[i].split('_')[1]
             rows[ticker] = pandas_helper.get_dates_with_first_row(source)                

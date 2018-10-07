@@ -105,6 +105,12 @@ venv.bak/
 
 
 
+# addtional exceptions for temporary saved files:
+
+rows.json
+
+
+
 # addtional exceptions for latex files:
 
 # Ignore all files in "LaTeX" folders
