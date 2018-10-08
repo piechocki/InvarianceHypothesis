@@ -9,11 +9,11 @@ rows_limit_per_iter = 10000000
 na_filter = False
 low_memory = True
 engine = "c"
-#f = lambda x: float(x)
-#i = lambda x: int(x)
-#n = lambda x: pd.to_numeric(x)
-#d = lambda x: pd.to_datetime(x)
-converters=None #{'Price': n, 'Volume': n}
+f = lambda x: np.NaN if x == "" else float(x)
+i = lambda x: np.NaN if x == "" else int(x)
+n = lambda x: pd.to_numeric(x)
+d = lambda x: pd.to_datetime(x, format="%H:%M:%S.%f")
+converters=None #{'Price': f, 'Volume': i, 'Time[G]': d}
 
 def get_dates_with_first_row(source):
 

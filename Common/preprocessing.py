@@ -89,18 +89,6 @@ class PreProcessor:
                 self.get_aggregation(df)
                 j += 1
 
-    #def get_aggregations(self):
-
-    #    for i in range(len(self.rows)):
-    #        ticker = list(self.rows)[i]
-    #        for j in range(len(self.rows[ticker])):
-    #            print("Processing date " + str(j+1) + " of " + str(len(self.rows[ticker])) + " in file " + str(i+1) + " of " + str(len(self.rows)) + " ...")
-    #            date = list(self.rows[ticker])[j]
-    #            date_next = list(self.rows[ticker])[j+1] if j+1 < len(self.rows[ticker]) else None
-    #            df = self.get_dataframe_per_date(ticker, date, date_next)
-    #            df = self.get_filtered_dataframe(df, "Trade")
-    #            self.get_aggregation(df)
-
     def get_aggregation(self, df):
 
         aggregation = pandas_helper.get_new_aggregation(df)
