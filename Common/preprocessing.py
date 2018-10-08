@@ -63,33 +63,28 @@ class PreProcessor:
 
     def get_splitted_dataframes(self, df, last_tail_length):
 
-        date = df["Date[G]"].iloc[-1]
+        date = str(df["Date[G]"].iloc[-1])
         ticker = df["#RIC"].iloc[0]
         index = self.rows[ticker][date]
         row = index % pandas_helper.rows_limit_per_iter + last_tail_length
-        print(df["Date[G]"].iloc[row-2])
-        print(df["Date[G]"].iloc[row-1])
-        print(df["Date[G]"].iloc[row])
-        print(df["Date[G]"].iloc[row+1])
-        print(df["Date[G]"].iloc[row+2])
-        return df[:row, :], df[row:, :]
+        return df.iloc[:row, :], df.iloc[row:, :]
 
     def get_aggregations(self):
 
         for i in range(len(self.rows)):
             ticker = list(self.rows)[i]
-            count_rows = self.rows[ticker][self.rows[ticker].keys()[-1]]
+            count_rows = self.rows[ticker][list(self.rows[ticker].keys())[-1]]
             max_iter = math.ceil(count_rows / pandas_helper.rows_limit_per_iter)
             for j in range(max_iter):
                 print("Processing iteration " + str(j+1) + " of " + str(max_iter) + " in file " + str(i+1) + " of " + str(len(self.rows)) + " ...")
                 if j == 0:
                     df_tail = pandas_helper.pd.DataFrame()
                 df = self.get_dataframe_per_iter(ticker, j)
-                df = self.get_filtered_dataframe(df, "Trade")
-                df = pandas_helper.concat_dfs(df, df_tail)
+                df = pandas_helper.concat_dfs(df_tail, df)
                 if j < max_iter-1:
                     last_tail_length = len(df_tail)
                     df, df_tail = self.get_splitted_dataframes(df, last_tail_length)
+                df = self.get_filtered_dataframe(df, "Trade")
                 self.get_aggregation(df)
 
     #def get_aggregations(self):
