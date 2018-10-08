@@ -42,6 +42,10 @@ def get_dataframe_by_iter(source, iter):
     nrows = rows_limit_per_iter
     return pd.read_csv(source, engine="c", header=None, compression="gzip", na_filter=False, nrows=nrows, skiprows=skiprows, names=names, converters=converters, low_memory=False)
 
+def get_dataframe_by_chunks(source):
+
+    return pd.read_csv(source, engine="c", iterator=True, chunksize=rows_limit_per_iter, header=None, skiprows=1, compression="gzip", na_filter=False, names=names, converters=converters, low_memory=False)
+
 def get_empty_aggregation():
 
     return pd.DataFrame({
@@ -102,6 +106,6 @@ def concat_dfs(df1, df2):
     
     return pd.concat([df1, df2])
 
-def to_datetime(df):
+def to_datetime(df, format=None):
     
-    return pd.to_datetime(df) #astype(datetime)
+    return pd.to_datetime(df, format=format) #astype(datetime)

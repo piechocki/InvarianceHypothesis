@@ -57,7 +57,7 @@ class PreProcessor:
         df.query("Qualifiers.str.startswith(' [ACT_FLAG1]')", inplace=True)
         df.loc[:,"Price"] = df["Price"].astype(float)
         df.loc[:,"Volume"] = df["Volume"].astype(int)
-        df.loc[:,"Time[G]"] = pandas_helper.to_datetime(df["Time[G]"])
+        df.loc[:,"Time[G]"] = pandas_helper.to_datetime(df["Time[G]"], format="%H:%M:%S.%f")
         #df.reset_index(inplace=True, drop=True)
         return df
 
@@ -73,19 +73,21 @@ class PreProcessor:
 
         for i in range(len(self.rows)):
             ticker = list(self.rows)[i]
+            source = self.get_source_by_ticker(ticker)
             count_rows = self.rows[ticker][list(self.rows[ticker].keys())[-1]]
             max_iter = math.ceil(count_rows / pandas_helper.rows_limit_per_iter)
-            for j in range(max_iter):
+            j = 0
+            for df in pandas_helper.get_dataframe_by_chunks(source):
                 print("Processing iteration " + str(j+1) + " of " + str(max_iter) + " in file " + str(i+1) + " of " + str(len(self.rows)) + " ...")
                 if j == 0:
                     df_tail = pandas_helper.pd.DataFrame()
-                df = self.get_dataframe_per_iter(ticker, j)
                 df = pandas_helper.concat_dfs(df_tail, df)
                 if j < max_iter-1:
                     last_tail_length = len(df_tail)
                     df, df_tail = self.get_splitted_dataframes(df, last_tail_length)
                 df = self.get_filtered_dataframe(df, "Trade")
                 self.get_aggregation(df)
+                j += 1
 
     #def get_aggregations(self):
 
