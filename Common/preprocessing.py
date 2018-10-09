@@ -100,9 +100,9 @@ class PreProcessor:
     def init_aggregation(self, df_trades, df_quotes):
 
         aggregation_trades = pandas_helper.get_new_aggregation_trades(df_trades)
-        #aggregation_quotes = pandas_helper.get_new_aggregation_quotes(df_quotes)
+        aggregation_quotes = pandas_helper.get_new_aggregation_quotes(df_quotes)
         self.aggregations_trades = pandas_helper.concat_dfs(self.aggregations_trades, aggregation_trades)
-        #self.aggregations_quotes = pandas_helper.concat_dfs(self.aggregations_quotes, aggregation_quotes)
+        self.aggregations_quotes = pandas_helper.concat_dfs(self.aggregations_quotes, aggregation_quotes)
 
     def save_rows_to_json(self):
 

@@ -5,7 +5,7 @@ names = ['#RIC', 'Date[G]', 'Time[G]', 'GMT Offset', 'Type', 'Ex/Cntrb.ID', 'Pri
 chunk_size = 20000
 header = 0
 compression = "gzip" # "infer"
-rows_limit_per_iter = 1000000
+rows_limit_per_iter = 30000000
 na_filter = False
 low_memory = True
 engine = "c"
@@ -67,29 +67,69 @@ def get_empty_aggregation_quotes():
     return pd.DataFrame({
         'ticker': [],
         'date': [],
-        'V': [],
-        'sigma_r': [],
-        'sigma_p': [],
-        'p': [],
-        'P': [],
         'N': [],
-        'X': []
+        'sigma_s': [],
+        'spread': [],
+        'bid_price': [],
+        'bid_size': [],
+        'ask_price': [],
+        'ask_size': []
         })
 
-def get_new_aggregation_quotes(df):  
+def get_new_aggregation_quotes(df):
+    
+    df["Time[G]+1"] = df["Time[G]"].shift(-1)
+    tails = df.groupby("Date[G]").tail(1).index.tolist()
+    for i in range(len(tails)):
+        df.at[tails[i], "Time[G]+1"] = np.NaN
+        
+    df["Time delta"] = (df["Time[G]+1"]-df["Time[G]"]).astype('timedelta64[ms]')
+    
+    df["Bid Price"] = df["Bid Price"].fillna(method="ffill")
+    df["Bid Size"] = df["Bid Size"].fillna(method="ffill")
+    df["Ask Price"] = df["Ask Price"].fillna(method="ffill")
+    df["Ask Size"] = df["Ask Size"].fillna(method="ffill")
 
-    # TODO: noch zu implementieren
-    return
+    df["Spread"] = df["Ask Price"] - df["Bid Price"]    
+    df["Time delta * Spread"] = df["Time delta"] * df["Spread"]
+    df["Time delta * Bid Price"] = df["Time delta"] * df["Bid Price"]
+    df["Time delta * Bid Size"] = df["Time delta"] * df["Bid Size"]
+    df["Time delta * Ask Price"] = df["Time delta"] * df["Ask Price"]
+    df["Time delta * Ask Size"] = df["Time delta"] * df["Ask Size"]
+
+    grouped = df.groupby("Date[G]")
+
+    ticker = grouped["#RIC"].agg(lambda x: x.iloc[-1])
+    sigma_s = grouped["Spread"].agg([np.std])["std"]
+    divisor = grouped["Time delta"].agg([np.sum])["sum"]
+    spread = grouped["Time delta * Spread"].agg([np.sum])["sum"] / divisor
+    bid_price = grouped["Time delta * Bid Price"].agg([np.sum])["sum"] / divisor
+    bid_size = grouped["Time delta * Bid Size"].agg([np.sum])["sum"] / divisor
+    ask_price = grouped["Time delta * Ask Price"].agg([np.sum])["sum"] / divisor
+    ask_size = grouped["Time delta * Ask Size"].agg([np.sum])["sum"] / divisor
+    date = grouped["Date[G]"].agg(lambda x: x.iloc[-1])
+    N = grouped["#RIC"].agg(lambda x: len(x))
+    
+    return pd.DataFrame({
+        'ticker': ticker.tolist(),
+        'date': date.tolist(),
+        'N': N.tolist(),
+        'sigma_s': sigma_s.tolist(),
+        'spread': spread.tolist(),
+        'bid_price': bid_price.tolist(),
+        'bid_size': bid_size.tolist(),
+        'ask_price': ask_price.tolist(),
+        'ask_size': ask_size.tolist()
+        })
 
 def get_new_aggregation_trades(df):    
     
-    df["Price-1"] = df["Price"].shift(1)
-    df["Time[G]+1"] = df["Time[G]"].shift(-1)
-    
+    df["Price-1"] = df["Price"].shift(1)    
     heads = df.groupby("Date[G]").head(1).index.tolist()
     for i in range(len(heads)):
         df.at[heads[i], "Price-1"] = np.NaN
-
+    
+    df["Time[G]+1"] = df["Time[G]"].shift(-1)
     tails = df.groupby("Date[G]").tail(1).index.tolist()
     for i in range(len(tails)):
         df.at[tails[i], "Time[G]+1"] = np.NaN
