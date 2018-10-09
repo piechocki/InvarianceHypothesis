@@ -126,7 +126,3 @@ def get_new_aggregation_trades(df):
 def concat_dfs(df1, df2):
     
     return pd.concat([df1, df2])
-
-def to_datetime(df, format=None):
-    
-    return pd.to_datetime(df, format=format) #astype(datetime)

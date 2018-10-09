@@ -53,7 +53,7 @@ class PreProcessor:
 
     def get_filtered_dataframes(self, df):
         
-        df.loc[:,"Time[G]"] = pandas_helper.to_datetime(df["Time[G]"], format="%H:%M:%S.%f")
+        df.loc[:,"Time[G]"] = pandas_helper.pd.to_datetime(df["Time[G]"], format="%H:%M:%S.%f")
 
         df_trades = df.query("Type=='Trade' and Qualifiers.str.startswith(' [ACT_FLAG1]')")
         df_quotes = df.query("Type=='Quote'")
