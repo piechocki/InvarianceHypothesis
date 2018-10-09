@@ -19,6 +19,7 @@ class PreProcessor:
 
     def init_rows_per_date(self):
 
+        print("Getting rows (indices) per ticker and day ... ")
         rows = {}
         for i in range(len(self.files)):
             print("Processing file " + str(i+1) + " of " + str(len(self.files)) + " ...")
@@ -61,16 +62,16 @@ class PreProcessor:
         #df.reset_index(inplace=True, drop=True)
         return df
 
-    def get_splitted_dataframes(self, df, last_tail_length):
+    def get_splitted_dataframes(self, df, ticker, last_tail_length):
 
         date = str(df["Date[G]"].iloc[-1])
-        ticker = df["#RIC"].iloc[0]
         index = self.rows[ticker][date]
         row = index % pandas_helper.rows_limit_per_iter + last_tail_length
         return df.iloc[:row, :], df.iloc[row:, :]
 
     def get_aggregations(self):
 
+        print("Getting aggregations per ticker and day ...")
         for i in range(len(self.rows)):
             ticker = list(self.rows)[i]
             source = self.get_source_by_ticker(ticker)
@@ -84,7 +85,7 @@ class PreProcessor:
                 df = pandas_helper.concat_dfs(df_tail, df)
                 if j < max_iter-1:
                     last_tail_length = len(df_tail)
-                    df, df_tail = self.get_splitted_dataframes(df, last_tail_length)
+                    df, df_tail = self.get_splitted_dataframes(df, ticker, last_tail_length)
                 df = self.get_filtered_dataframe(df, "Trade")
                 self.get_aggregation(df)
                 j += 1
