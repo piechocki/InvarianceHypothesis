@@ -5,15 +5,16 @@ names = ['#RIC', 'Date[G]', 'Time[G]', 'GMT Offset', 'Type', 'Ex/Cntrb.ID', 'Pri
 chunk_size = 20000
 header = 0
 compression = "gzip" # "infer"
-rows_limit_per_iter = 10000000
+rows_limit_per_iter = 1000000
 na_filter = False
 low_memory = True
 engine = "c"
 f = lambda x: np.NaN if x == "" else float(x)
 i = lambda x: np.NaN if x == "" else int(x)
-n = lambda x: pd.to_numeric(x)
+n = lambda x: pd.to_numeric(x, errors='coerce')
 d = lambda x: pd.to_datetime(x, format="%H:%M:%S.%f")
-converters=None #{'Price': f, 'Volume': i, 'Time[G]': d}
+converters=None #{'Price': n, 'Volume': n, 'Time[G]': d, 'Bid Price': n, 'Bid Size': n, 'Ask Price': n, 'Ask Size': n}
+
 
 def get_dates_with_first_row(source):
 
@@ -46,7 +47,7 @@ def get_dataframe_by_chunks(source):
 
     return pd.read_csv(source, engine="c", iterator=True, chunksize=rows_limit_per_iter, header=None, skiprows=1, compression="gzip", na_filter=False, names=names, converters=converters, low_memory=False)
 
-def get_empty_aggregation():
+def get_empty_aggregation_trades():
 
     return pd.DataFrame({
         'ticker': [],
@@ -60,7 +61,27 @@ def get_empty_aggregation():
         'X': []
         })
 
-def get_new_aggregation(df):    
+def get_empty_aggregation_quotes():
+    
+    #TODO: noch anpassen an output von get_new_aggregation_quotes()
+    return pd.DataFrame({
+        'ticker': [],
+        'date': [],
+        'V': [],
+        'sigma_r': [],
+        'sigma_p': [],
+        'p': [],
+        'P': [],
+        'N': [],
+        'X': []
+        })
+
+def get_new_aggregation_quotes(df):  
+
+    # TODO: noch zu implementieren
+    return
+
+def get_new_aggregation_trades(df):    
     
     df["Price-1"] = df["Price"].shift(1)
     df["Time[G]+1"] = df["Time[G]"].shift(-1)

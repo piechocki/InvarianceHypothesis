@@ -16,5 +16,5 @@ if __name__ == "__main__":
     #pp.init_rows_per_date()
     #pp.save_rows_to_json()
     pp.load_rows_per_date()
-    pp.get_aggregations()
+    pp.init_aggregations()
     pp.save_aggregations_to_csv()

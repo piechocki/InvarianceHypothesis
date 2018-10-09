@@ -15,7 +15,8 @@ class PreProcessor:
             if file.endswith(".csv.gz") and additional_filter in file:
                 self.files.append(file)
         self.rows = {}
-        self.aggregations = pandas_helper.get_empty_aggregation()
+        self.aggregations_trades = pandas_helper.get_empty_aggregation_trades()
+        self.aggregations_quotes = pandas_helper.get_empty_aggregation_quotes()
 
     def init_rows_per_date(self):
 
@@ -50,17 +51,23 @@ class PreProcessor:
         source = self.get_source_by_ticker(ticker)
         return pandas_helper.get_dataframe_by_iter(source, iter)
 
-    def get_filtered_dataframe(self, df, type):
+    def get_filtered_dataframes(self, df):
         
-        if type != "Trade" and type != "Quote":
-            return None
-        df.query("Type=='" + type + "'", inplace=True)
-        df.query("Qualifiers.str.startswith(' [ACT_FLAG1]')", inplace=True)
-        df.loc[:,"Price"] = df["Price"].astype(float)
-        df.loc[:,"Volume"] = df["Volume"].astype(int)
         df.loc[:,"Time[G]"] = pandas_helper.to_datetime(df["Time[G]"], format="%H:%M:%S.%f")
+
+        df_trades = df.query("Type=='Trade' and Qualifiers.str.startswith(' [ACT_FLAG1]')")
+        df_quotes = df.query("Type=='Quote'")
+
+        df_trades.loc[:,"Price"] = pandas_helper.pd.to_numeric(df_trades["Price"], errors="coerce")
+        df_trades.loc[:,"Volume"] = pandas_helper.pd.to_numeric(df_trades["Volume"], errors="coerce")
+        df_quotes.loc[:,"Bid Price"] = pandas_helper.pd.to_numeric(df_quotes["Bid Price"], errors="coerce")
+        df_quotes.loc[:,"Bid Size"] = pandas_helper.pd.to_numeric(df_quotes["Bid Size"], errors="coerce")
+        df_quotes.loc[:,"Ask Price"] = pandas_helper.pd.to_numeric(df_quotes["Ask Price"], errors="coerce")
+        df_quotes.loc[:,"Ask Size"] = pandas_helper.pd.to_numeric(df_quotes["Ask Size"], errors="coerce")        
+
         #df.reset_index(inplace=True, drop=True)
-        return df
+
+        return df_trades, df_quotes
 
     def get_splitted_dataframes(self, df, ticker, last_tail_length):
 
@@ -69,7 +76,7 @@ class PreProcessor:
         row = index % pandas_helper.rows_limit_per_iter + last_tail_length
         return df.iloc[:row, :], df.iloc[row:, :]
 
-    def get_aggregations(self):
+    def init_aggregations(self):
 
         print("Getting aggregations per ticker and day ...")
         for i in range(len(self.rows)):
@@ -86,15 +93,16 @@ class PreProcessor:
                 if j < max_iter-1:
                     last_tail_length = len(df_tail)
                     df, df_tail = self.get_splitted_dataframes(df, ticker, last_tail_length)
-                df = self.get_filtered_dataframe(df, "Trade")
-                self.get_aggregation(df)
+                df_trades, df_quotes = self.get_filtered_dataframes(df)
+                self.init_aggregation(df_trades, df_quotes)
                 j += 1
 
-    def get_aggregation(self, df):
+    def init_aggregation(self, df_trades, df_quotes):
 
-        aggregation = pandas_helper.get_new_aggregation(df)
-        self.aggregations = pandas_helper.concat_dfs(self.aggregations, aggregation)
-        return aggregation
+        aggregation_trades = pandas_helper.get_new_aggregation_trades(df_trades)
+        #aggregation_quotes = pandas_helper.get_new_aggregation_quotes(df_quotes)
+        self.aggregations_trades = pandas_helper.concat_dfs(self.aggregations_trades, aggregation_trades)
+        #self.aggregations_quotes = pandas_helper.concat_dfs(self.aggregations_quotes, aggregation_quotes)
 
     def save_rows_to_json(self):
 
@@ -111,4 +119,5 @@ class PreProcessor:
 
     def save_aggregations_to_csv(self):
 
-        self.aggregations.to_csv("aggregations.csv")
+        self.aggregations_trades.to_csv("trades.csv")
+        self.aggregations_quotes.to_csv("quotes.csv")
