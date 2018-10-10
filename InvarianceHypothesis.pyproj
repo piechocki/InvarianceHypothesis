@@ -29,7 +29,7 @@
     <Compile Include="Prototypes\prototype.py" />
     <Compile Include="Common\preprocessing.py" />
     <Compile Include="Prototypes\test.py" />
-    <Compile Include="Util\pandas_helper.py" />
+    <Compile Include="Util\pandashelper.py" />
     <Compile Include="Util\__init__.py">
       <SubType>Code</SubType>
     </Compile>

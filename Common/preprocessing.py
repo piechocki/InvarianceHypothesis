@@ -2,7 +2,7 @@ import os
 import re
 import json
 import math
-import Util.pandas_helper as pandas_helper
+import Util.pandashelper as pandashelper
 
 
 class PreProcessor:
@@ -18,8 +18,8 @@ class PreProcessor:
             if file.endswith(".csv.gz") and additional_filter in file:
                 self.files.append(file)
         self.rows = {}
-        self.aggregations_trades = pandas_helper.get_empty_aggregation_trades()
-        self.aggregations_quotes = pandas_helper.get_empty_aggregation_quotes()
+        self.aggregations_trades = pandashelper.get_empty_aggregation_trades()
+        self.aggregations_quotes = pandashelper.get_empty_aggregation_quotes()
 
     def init_rows_per_date(self):
 
@@ -30,7 +30,7 @@ class PreProcessor:
                   str(len(self.files)) + " ...")
             source = self.input_folder + self.files[i]
             ticker = self.files[i].split('_')[1]
-            rows[ticker] = pandas_helper.get_dates_with_first_row(source)
+            rows[ticker] = pandashelper.get_dates_with_first_row(source)
         self.rows = rows
 
     def get_dataframe_per_date(self, ticker, date, date_next):
@@ -41,7 +41,7 @@ class PreProcessor:
         first_row = self.rows.get(ticker, None).get(date, None)
         last_row = (self.rows.get(ticker, None).get(date_next, None) - 1) \
             if date_next is not None else (-1)
-        return pandas_helper.get_dataframe_by_rows(source, first_row, last_row)
+        return pandashelper.get_dataframe_by_rows(source, first_row, last_row)
 
     def get_source_by_ticker(self, ticker):
 
@@ -54,28 +54,28 @@ class PreProcessor:
         if not self.rows:
             return None
         source = self.get_source_by_ticker(ticker)
-        return pandas_helper.get_dataframe_by_iter(source, iter)
+        return pandashelper.get_dataframe_by_iter(source, iter)
 
     def get_filtered_dataframes(self, df):
 
-        df.loc[:, "Time[G]"] = pandas_helper.pd.to_datetime(
+        df.loc[:, "Time[G]"] = pandashelper.pd.to_datetime(
             df["Time[G]"], format="%H:%M:%S.%f")
 
         df_trades = df.query("Type=='Trade' and " +
                              "Qualifiers.str.startswith(' [ACT_FLAG1]')")
         df_quotes = df.query("Type=='Quote'")
 
-        df_trades.loc[:, "Price"] = pandas_helper.pd.to_numeric(
+        df_trades.loc[:, "Price"] = pandashelper.pd.to_numeric(
             df_trades["Price"], errors="coerce")
-        df_trades.loc[:, "Volume"] = pandas_helper.pd.to_numeric(
+        df_trades.loc[:, "Volume"] = pandashelper.pd.to_numeric(
             df_trades["Volume"], errors="coerce")
-        df_quotes.loc[:, "Bid Price"] = pandas_helper.pd.to_numeric(
+        df_quotes.loc[:, "Bid Price"] = pandashelper.pd.to_numeric(
             df_quotes["Bid Price"], errors="coerce")
-        df_quotes.loc[:, "Bid Size"] = pandas_helper.pd.to_numeric(
+        df_quotes.loc[:, "Bid Size"] = pandashelper.pd.to_numeric(
             df_quotes["Bid Size"], errors="coerce")
-        df_quotes.loc[:, "Ask Price"] = pandas_helper.pd.to_numeric(
+        df_quotes.loc[:, "Ask Price"] = pandashelper.pd.to_numeric(
             df_quotes["Ask Price"], errors="coerce")
-        df_quotes.loc[:, "Ask Size"] = pandas_helper.pd.to_numeric(
+        df_quotes.loc[:, "Ask Size"] = pandashelper.pd.to_numeric(
             df_quotes["Ask Size"], errors="coerce")
 
         return df_trades, df_quotes
@@ -84,7 +84,7 @@ class PreProcessor:
 
         date = str(df["Date[G]"].iloc[-1])
         index = self.rows[ticker][date]
-        row = index % pandas_helper.rows_limit_per_iter + last_tail_length
+        row = index % pandashelper.rows_limit_per_iter + last_tail_length
         return df.iloc[:row, :], df.iloc[row:, :]
 
     def init_aggregations(self):
@@ -95,15 +95,15 @@ class PreProcessor:
             source = self.get_source_by_ticker(ticker)
             count_rows = self.rows[ticker][list(self.rows[ticker].keys())[-1]]
             max_iter = math.ceil(count_rows /
-                                 pandas_helper.rows_limit_per_iter)
+                                 pandashelper.rows_limit_per_iter)
             j = 0
-            for df in pandas_helper.get_dataframe_by_chunks(source):
+            for df in pandashelper.get_dataframe_by_chunks(source):
                 print("Processing iteration " + str(j+1) + " of " +
                       str(max_iter) + " in file " + str(i+1) + " of " +
                       str(len(self.rows)) + " ...")
                 if j == 0:
-                    df_tail = pandas_helper.pd.DataFrame()
-                df = pandas_helper.concat_dfs(df_tail, df)
+                    df_tail = pandashelper.pd.DataFrame()
+                df = pandashelper.concat_dfs(df_tail, df)
                 if j < max_iter-1:
                     last_tail_length = len(df_tail)
                     df, df_tail = self.get_splitted_dataframes(
@@ -114,13 +114,13 @@ class PreProcessor:
 
     def init_aggregation(self, df_trades, df_quotes):
 
-        aggregation_trades = pandas_helper.get_new_aggregation_trades(
+        aggregation_trades = pandashelper.get_new_aggregation_trades(
             df_trades)
-        aggregation_quotes = pandas_helper.get_new_aggregation_quotes(
+        aggregation_quotes = pandashelper.get_new_aggregation_quotes(
             df_quotes)
-        self.aggregations_trades = pandas_helper.concat_dfs(
+        self.aggregations_trades = pandashelper.concat_dfs(
             self.aggregations_trades, aggregation_trades)
-        self.aggregations_quotes = pandas_helper.concat_dfs(
+        self.aggregations_quotes = pandashelper.concat_dfs(
             self.aggregations_quotes, aggregation_quotes)
 
     def save_rows_to_json(self):
@@ -138,9 +138,9 @@ class PreProcessor:
 
     def load_aggregations(self):
 
-        self.aggregations_trades = pandas_helper.pd.read_csv(
+        self.aggregations_trades = pandashelper.pd.read_csv(
             self.marketplace + " Trades.csv", header=0)
-        self.aggregations_quotes = pandas_helper.pd.read_csv(
+        self.aggregations_quotes = pandashelper.pd.read_csv(
             self.marketplace + " Quotes.csv", header=0)
 
     def save_aggregations_to_csv(self):
