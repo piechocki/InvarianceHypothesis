@@ -55,25 +55,28 @@ def get_empty_aggregation_trades():
         'V': [],
         'sigma_r': [],
         'sigma_p': [],
-        'p': [],
         'P': [],
         'N': [],
-        'X': []
+        'X': [],
+        'O': [],
+        'C': [],
+        'H': [],
+        'L': []
         })
 
 def get_empty_aggregation_quotes():
     
-    #TODO: noch anpassen an output von get_new_aggregation_quotes()
     return pd.DataFrame({
         'ticker': [],
         'date': [],
         'N': [],
         'sigma_s': [],
-        'spread': [],
+        'sigma_m': [],
         'bid_price': [],
         'bid_size': [],
         'ask_price': [],
-        'ask_size': []
+        'ask_size': [],
+        'rel_spread': []
         })
 
 def get_new_aggregation_quotes(df):
@@ -90,8 +93,10 @@ def get_new_aggregation_quotes(df):
     df["Ask Price"] = df["Ask Price"].fillna(method="ffill")
     df["Ask Size"] = df["Ask Size"].fillna(method="ffill")
 
-    df["Spread"] = df["Ask Price"] - df["Bid Price"]    
-    df["Time delta * Spread"] = df["Time delta"] * df["Spread"]
+    df["Absolute spread"] = df["Ask Price"] - df["Bid Price"]
+    df["Mid quote"] = (df["Ask Price"] + df["Bid Price"]) / 2
+    df["Relative spread"] = df["Absolute spread"] / df["Mid quote"] * 10000
+    df["Time delta * Relative spread"] = df["Time delta"] * df["Relative spread"]
     df["Time delta * Bid Price"] = df["Time delta"] * df["Bid Price"]
     df["Time delta * Bid Size"] = df["Time delta"] * df["Bid Size"]
     df["Time delta * Ask Price"] = df["Time delta"] * df["Ask Price"]
@@ -100,13 +105,14 @@ def get_new_aggregation_quotes(df):
     grouped = df.groupby("Date[G]")
 
     ticker = grouped["#RIC"].agg(lambda x: x.iloc[-1])
-    sigma_s = grouped["Spread"].agg([np.std])["std"]
+    sigma_s = grouped["Absolute spread"].agg([np.std])["std"]
+    sigma_m = grouped["Mid quote"].agg([np.std])["std"]
     divisor = grouped["Time delta"].agg([np.sum])["sum"]
-    spread = grouped["Time delta * Spread"].agg([np.sum])["sum"] / divisor
     bid_price = grouped["Time delta * Bid Price"].agg([np.sum])["sum"] / divisor
     bid_size = grouped["Time delta * Bid Size"].agg([np.sum])["sum"] / divisor
     ask_price = grouped["Time delta * Ask Price"].agg([np.sum])["sum"] / divisor
     ask_size = grouped["Time delta * Ask Size"].agg([np.sum])["sum"] / divisor
+    rel_spread = grouped["Time delta * Relative spread"].agg([np.sum])["sum"] / divisor
     date = grouped["Date[G]"].agg(lambda x: x.iloc[-1])
     N = grouped["#RIC"].agg(lambda x: len(x))
     
@@ -115,11 +121,12 @@ def get_new_aggregation_quotes(df):
         'date': date.tolist(),
         'N': N.tolist(),
         'sigma_s': sigma_s.tolist(),
-        'spread': spread.tolist(),
+        'sigma_m': sigma_m.tolist(),
         'bid_price': bid_price.tolist(),
         'bid_size': bid_size.tolist(),
         'ask_price': ask_price.tolist(),
-        'ask_size': ask_size.tolist()
+        'ask_size': ask_size.tolist(),
+        'rel_spread': rel_spread.tolist()
         })
 
 def get_new_aggregation_trades(df):    
@@ -144,10 +151,13 @@ def get_new_aggregation_trades(df):
     ticker = grouped["#RIC"].agg(lambda x: x.iloc[-1])
     V = grouped["V"].agg([np.sum])["sum"]
     sigma_r = grouped["Return"].agg([np.std])["std"]
-    sigma_p = grouped["Price"].agg([np.std]) ["std"]
+    sigma_p = grouped["Price"].agg([np.std])["std"]
     X = grouped["Volume"].agg([np.sum])["sum"]
-    p = grouped["Time delta * P"].agg([np.sum])["sum"] / grouped["Time delta"].agg([np.sum])["sum"]
-    P = grouped["Price"].agg(lambda x: x.iloc[-1])
+    P = grouped["Time delta * P"].agg([np.sum])["sum"] / grouped["Time delta"].agg([np.sum])["sum"]
+    O = grouped["Price"].agg(lambda x: x.iloc[0])
+    C = grouped["Price"].agg(lambda x: x.iloc[-1])
+    H = grouped["Price"].agg([np.amax])["amax"]
+    L = grouped["Price"].agg([np.amin])["amin"]
     date = grouped["Date[G]"].agg(lambda x: x.iloc[-1])
     N = grouped["#RIC"].agg(lambda x: len(x))
     
@@ -157,10 +167,13 @@ def get_new_aggregation_trades(df):
         'V': V.tolist(),
         'sigma_r': sigma_r.tolist(),
         'sigma_p': sigma_p.tolist(),
-        'p': p.tolist(),
         'P': P.tolist(),
         'N': N.tolist(),
-        'X': X.tolist()
+        'X': X.tolist(),
+        'O': O.tolist(),
+        'C': C.tolist(),
+        'H': H.tolist(),
+        'L': L.tolist()
         })
 
 def concat_dfs(df1, df2):

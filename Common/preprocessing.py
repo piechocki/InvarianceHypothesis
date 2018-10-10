@@ -10,6 +10,7 @@ class PreProcessor:
     def __init__(self, input_folder, additional_filter = ""):
 
         self.input_folder = input_folder if input_folder[-1:] == "/" else input_folder + "/"
+        self.marketplace = self.get_marketplace() if additional_filter == "" else self.get_marketplace() + " " + additional_filter[1:3]
         self.files = []
         for file in os.listdir(self.input_folder):
             if file.endswith(".csv.gz") and additional_filter in file:
@@ -63,9 +64,7 @@ class PreProcessor:
         df_quotes.loc[:,"Bid Price"] = pandas_helper.pd.to_numeric(df_quotes["Bid Price"], errors="coerce")
         df_quotes.loc[:,"Bid Size"] = pandas_helper.pd.to_numeric(df_quotes["Bid Size"], errors="coerce")
         df_quotes.loc[:,"Ask Price"] = pandas_helper.pd.to_numeric(df_quotes["Ask Price"], errors="coerce")
-        df_quotes.loc[:,"Ask Size"] = pandas_helper.pd.to_numeric(df_quotes["Ask Size"], errors="coerce")        
-
-        #df.reset_index(inplace=True, drop=True)
+        df_quotes.loc[:,"Ask Size"] = pandas_helper.pd.to_numeric(df_quotes["Ask Size"], errors="coerce")
 
         return df_trades, df_quotes
 
@@ -107,17 +106,26 @@ class PreProcessor:
     def save_rows_to_json(self):
 
         j = json.dumps(self.rows)
-        f = open("rows.json","w")
+        f = open(self.marketplace + ".json","w")
         f.write(j)
         f.close()
     
     def load_rows_per_date(self):
         
-        f = open("rows.json")
+        f = open(self.marketplace + ".json")
         self.rows = json.load(f)
         f.close()
 
+    def load_aggregations(self):
+
+        self.aggregations_trades = pandas_helper.pd.read_csv(self.marketplace + " Trades.csv", header=0)
+        self.aggregations_quotes = pandas_helper.pd.read_csv(self.marketplace + " Quotes.csv", header=0)
+
     def save_aggregations_to_csv(self):
 
-        self.aggregations_trades.to_csv("trades.csv")
-        self.aggregations_quotes.to_csv("quotes.csv")
+        self.aggregations_trades.to_csv(self.marketplace + " Trades.csv", index=False)
+        self.aggregations_quotes.to_csv(self.marketplace + " Quotes.csv", index=False)
+
+    def get_marketplace(self):
+
+        return self.input_folder[:-1].rsplit('/', 1)[1]
