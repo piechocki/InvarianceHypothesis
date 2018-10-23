@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import math
 
 names = ['#RIC', 'Date[G]', 'Time[G]', 'GMT Offset', 'Type',
          'Ex/Cntrb.ID', 'Price', 'Volume', 'Bid Price',
@@ -24,6 +25,12 @@ def n(x): return pd.to_numeric(x, errors='coerce')
 
 
 def d(x): return pd.to_datetime(x, format="%H:%M:%S.%f")
+
+
+def round_ten_up(x): return int(math.ceil(x / 10.0)) * 10
+
+
+def round_ten_down(x): return x - x%10
 
 
 def get_dates_with_first_row(source):
@@ -99,6 +106,7 @@ def get_empty_aggregation_quotes():
         'N': [],
         'sigma_s': [],
         'sigma_m': [],
+        'sigma_m_log': [],
         'bid_price': [],
         'bid_size': [],
         'ask_price': [],
@@ -131,12 +139,64 @@ def get_new_aggregation_quotes(df):
     df["Time delta * Bid Size"] = df["Time delta"] * df["Bid Size"]
     df["Time delta * Ask Price"] = df["Time delta"] * df["Ask Price"]
     df["Time delta * Ask Size"] = df["Time delta"] * df["Ask Size"]
+    df["Log Bid"] = np.log(df["Bid Price"])
+    df["Log Ask"] = np.log(df["Ask Price"])
+    df["Log midpoint"] = (df["Log Bid"] + df["Log Ask"]) / 2
 
     grouped = df.groupby("Date[G]")
+    days = list(grouped.groups.keys())
+
+    opening = grouped["Time[G]"].agg(lambda x: x.iloc[0])
+    closing = grouped["Time[G]"].agg(lambda x: x.iloc[-1])
+    resolution = pd.Timedelta(10, unit="s")
+
+    df_midpoint = pd.DataFrame({"day":[], "time":[], "midpoint":[]})
+
+    for i in range(len(days)):
+        day = days[i]
+        day_open = pd.Timestamp(year=1900,
+                                month=1,
+                                day=1,
+                                hour=opening[day].hour,
+                                minute=opening[day].minute,
+                                second=round_ten_up(opening[day].second))
+        day_close = pd.Timestamp(year=1900,
+                                 month=1,
+                                 day=1,
+                                 hour=closing[day].hour,
+                                 minute=closing[day].minute,
+                                 second=round_ten_down(closing[day].second))
+
+        ten_sec_series = pd.date_range(day_open, day_close, freq="10S").values
+        df_midpoint = df_midpoint.append(pd.DataFrame({"day":day, "time":ten_sec_series, "midpoint":np.nan}), ignore_index=True)
+
+        for j in range(len(ten_sec_series)):
+            time = df_midpoint["time"].iloc[j]            
+            index_exact = df.index[(df["Time[G]"] == time) & (df["Date[G]"] == day)].tolist()
+            if index_exact:
+                df_midpoint["midpoint"].iloc[j] = df["Log midpoint"][index_exact[0]]
+                continue
+
+            index_prev = df.index[(df["Time[G]"] < time) & (df["Date[G]"] == day)].tolist()[-1]
+            index_next = df.index[(df["Time[G]"] > time) & (df["Date[G]"] == day)].tolist()[0]
+
+            midpoint_prev = df["Log midpoint"][index_prev]
+            midpoint_next = df["Log midpoint"][index_next]
+            
+            if midpoint_prev == midpoint_next:
+                midpoint_interpol = midpoint_prev
+            else:
+                time_prev = df["Time[G]"][index_prev]
+                time_next = df["Time[G]"][index_next]
+                interpol_factor = (time - time_prev) / (time_next - time_prev)
+                midpoint_interpol = midpoint_prev + (midpoint_next - midpoint_prev) * interpol_factor
+
+            df_midpoint["midpoint"].iloc[j] = midpoint_interpol
 
     ticker = grouped["#RIC"].agg(lambda x: x.iloc[-1])
     sigma_s = grouped["Absolute spread"].agg([np.std])["std"]
     sigma_m = grouped["Mid quote"].agg([np.std])["std"]
+    sigma_m_log = df_midpoint.groupby("day")["midpoint"].agg([np.std])["std"]
     divisor = grouped["Time delta"].agg([np.sum])["sum"]
     bid_price = grouped["Time delta * Bid Price"].agg([np.sum])["sum"] \
         / divisor
@@ -157,6 +217,7 @@ def get_new_aggregation_quotes(df):
         'N': N.tolist(),
         'sigma_s': sigma_s.tolist(),
         'sigma_m': sigma_m.tolist(),
+        'sigma_m_log': sigma_m_log.tolist(),
         'bid_price': bid_price.tolist(),
         'bid_size': bid_size.tolist(),
         'ask_price': ask_price.tolist(),
