@@ -8,7 +8,7 @@ names = ['#RIC', 'Date[G]', 'Time[G]', 'GMT Offset', 'Type',
 chunk_size = 20000
 header = 0
 compression = "gzip"  # "infer"
-rows_limit_per_iter = 10000000
+rows_limit_per_iter = 1000000
 na_filter = False
 low_memory = True
 engine = "c"
@@ -31,6 +31,14 @@ def round_ten_up(x): return int(math.ceil(x / 10.0)) * 10
 
 
 def round_ten_down(x): return x - x%10
+
+
+def round_time(x): return pd.Timestamp(year=1900,
+                                       month=1,
+                                       day=1,
+                                       hour=x.hour,
+                                       minute=x.minute,
+                                       second=round_ten_down(x.second))
 
 
 def get_dates_with_first_row(source):
@@ -145,12 +153,11 @@ def get_new_aggregation_quotes(df):
 
     grouped = df.groupby("Date[G]")
     days = list(grouped.groups.keys())
-
+    
     opening = grouped["Time[G]"].agg(lambda x: x.iloc[0])
     closing = grouped["Time[G]"].agg(lambda x: x.iloc[-1])
-    resolution = pd.Timedelta(10, unit="s")
 
-    df_midpoint = pd.DataFrame({"day":[], "time":[], "midpoint":[]})
+    time_even = pd.DataFrame({"Date[G]":[], "Time[G]":[], "Log midpoint":[]})
 
     for i in range(len(days)):
         day = days[i]
@@ -166,37 +173,34 @@ def get_new_aggregation_quotes(df):
                                  hour=closing[day].hour,
                                  minute=closing[day].minute,
                                  second=round_ten_down(closing[day].second))
-
         ten_sec_series = pd.date_range(day_open, day_close, freq="10S").values
-        df_midpoint = df_midpoint.append(pd.DataFrame({"day":day, "time":ten_sec_series, "midpoint":np.nan}), ignore_index=True)
+        time_even_day = pd.DataFrame({"Date[G]":day, "Time[G]":ten_sec_series, "Log midpoint":np.nan})
+        time_even = time_even.append(time_even_day, ignore_index=True)
 
-        for j in range(len(ten_sec_series)):
-            time = df_midpoint["time"].iloc[j]            
-            index_exact = df.index[(df["Time[G]"] == time) & (df["Date[G]"] == day)].tolist()
-            if index_exact:
-                df_midpoint["midpoint"].iloc[j] = df["Log midpoint"][index_exact[0]]
-                continue
+    time_all = pd.concat([df[["Date[G]","Time[G]","Log midpoint"]], time_even], ignore_index=True)
+    time_all = time_all.sort_values(["Date[G]","Time[G]"])
+    realised_stderr = []
 
-            index_prev = df.index[(df["Time[G]"] < time) & (df["Date[G]"] == day)].tolist()[-1]
-            index_next = df.index[(df["Time[G]"] > time) & (df["Date[G]"] == day)].tolist()[0]
-
-            midpoint_prev = df["Log midpoint"][index_prev]
-            midpoint_next = df["Log midpoint"][index_next]
-            
-            if midpoint_prev == midpoint_next:
-                midpoint_interpol = midpoint_prev
-            else:
-                time_prev = df["Time[G]"][index_prev]
-                time_next = df["Time[G]"][index_next]
-                interpol_factor = (time - time_prev) / (time_next - time_prev)
-                midpoint_interpol = midpoint_prev + (midpoint_next - midpoint_prev) * interpol_factor
-
-            df_midpoint["midpoint"].iloc[j] = midpoint_interpol
+    for i in range(len(days)):
+        day = days[i]
+        # save all midpoints of one day in a new series inclusive all even timestamps with null values
+        logs = pd.Series(time_all.loc[time_all['Date[G]'] == day]["Log midpoint"].values, index=time_all.loc[time_all['Date[G]'] == day]["Time[G]"])
+        # intepolate all midpoints for even timestamps
+        logs.interpolate(method="time", limit_area="inside", inplace=True)
+        # prepare a new dataframe with same columns for merging with time_even
+        time_even_day = pd.DataFrame({"Date[G]":day, "Time[G]":logs.index.values, "Log midpoint":logs.values})
+        # extract only the midpoints for even timestamps and drop all the others
+        time_even_day = pd.merge(time_even, time_even_day, on=["Date[G]", "Time[G]"])
+        # drop nulls
+        time_even_day = time_even_day['Log midpoint_y'].dropna()
+        # drop consecutive duplicates (with variance of zero)
+        time_even_day = time_even_day.loc[time_even_day.shift() != time_even_day]
+        # compute realised standard error and append result to list
+        realised_stderr.append(np.std(time_even_day)) # TODO fix error with stderror = nan
 
     ticker = grouped["#RIC"].agg(lambda x: x.iloc[-1])
     sigma_s = grouped["Absolute spread"].agg([np.std])["std"]
     sigma_m = grouped["Mid quote"].agg([np.std])["std"]
-    sigma_m_log = df_midpoint.groupby("day")["midpoint"].agg([np.std])["std"]
     divisor = grouped["Time delta"].agg([np.sum])["sum"]
     bid_price = grouped["Time delta * Bid Price"].agg([np.sum])["sum"] \
         / divisor
@@ -217,7 +221,7 @@ def get_new_aggregation_quotes(df):
         'N': N.tolist(),
         'sigma_s': sigma_s.tolist(),
         'sigma_m': sigma_m.tolist(),
-        'sigma_m_log': sigma_m_log.tolist(),
+        'sigma_m_log': realised_stderr,
         'bid_price': bid_price.tolist(),
         'bid_size': bid_size.tolist(),
         'ask_price': ask_price.tolist(),
