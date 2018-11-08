@@ -27,10 +27,11 @@ def n(x): return pd.to_numeric(x, errors='coerce')
 def d(x): return pd.to_datetime(x, format="%H:%M:%S.%f")
 
 
-def round_seconds_up(x, seconds = 10): return int(math.ceil(x / float(seconds))) * seconds
+def round_seconds_up(x, seconds=10): return int(
+    math.ceil(x / float(seconds))) * seconds
 
 
-def round_seconds_down(x, seconds = 10): return x - x%seconds
+def round_seconds_down(x, seconds=10): return x - x % seconds
 
 
 def round_time(x): return pd.Timestamp(year=1900,
@@ -103,7 +104,7 @@ def get_empty_aggregation_trades():
         'Close': [],
         'High': [],
         'Low': []
-        })
+    })
 
 
 def get_empty_aggregation_quotes():
@@ -120,7 +121,7 @@ def get_empty_aggregation_quotes():
         'ask_price': [],
         'ask_size': [],
         'rel_spread': []
-        })
+    })
 
 
 def get_new_aggregation_quotes(df):
@@ -130,7 +131,7 @@ def get_new_aggregation_quotes(df):
     for i in range(len(tails)):
         df.at[tails[i], "Time[G]+1"] = np.NaN
 
-    df["Time delta"] = (df["Time[G]+1"]-df["Time[G]"]).astype(
+    df["Time delta"] = (df["Time[G]+1"] - df["Time[G]"]).astype(
         'timedelta64[ms]')
 
     df["Bid Price"] = df["Bid Price"].fillna(method="ffill")
@@ -153,11 +154,12 @@ def get_new_aggregation_quotes(df):
 
     grouped = df.groupby("Date[G]")
     days = list(grouped.groups.keys())
-    
+
     opening = grouped["Time[G]"].agg(lambda x: x.iloc[0])
     closing = grouped["Time[G]"].agg(lambda x: x.iloc[-1])
 
-    time_even = pd.DataFrame({"Date[G]":[], "Time[G]":[], "Log midpoint":[]})
+    time_even = pd.DataFrame(
+        {"Date[G]": [], "Time[G]": [], "Log midpoint": []})
 
     for i in range(len(days)):
         day = days[i]
@@ -167,36 +169,48 @@ def get_new_aggregation_quotes(df):
                                 hour=opening[day].hour,
                                 minute=opening[day].minute,
                                 second=round_seconds_up(opening[day].second))
-        day_close = pd.Timestamp(year=1900,
-                                 month=1,
-                                 day=1,
-                                 hour=closing[day].hour,
-                                 minute=closing[day].minute,
-                                 second=round_seconds_down(closing[day].second))
+        day_close = pd.Timestamp(
+            year=1900,
+            month=1,
+            day=1,
+            hour=closing[day].hour,
+            minute=closing[day].minute,
+            second=round_seconds_down(
+                closing[day].second))
         ten_sec_series = pd.date_range(day_open, day_close, freq="10S").values
-        time_even_day = pd.DataFrame({"Date[G]":day, "Time[G]":ten_sec_series, "Log midpoint":np.nan})
+        time_even_day = pd.DataFrame(
+            {"Date[G]": day, "Time[G]": ten_sec_series, "Log midpoint": np.nan})
         time_even = time_even.append(time_even_day, ignore_index=True)
 
-    time_all = pd.concat([df[["Date[G]","Time[G]","Log midpoint"]], time_even], ignore_index=True)
-    time_all = time_all.sort_values(["Date[G]","Time[G]"])
+    time_all = pd.concat(
+        [df[["Date[G]", "Time[G]", "Log midpoint"]], time_even], ignore_index=True)
+    time_all = time_all.sort_values(["Date[G]", "Time[G]"])
     realised_stderr = []
 
     for i in range(len(days)):
         day = days[i]
-        # save all midpoints of one day in a new series inclusive all even timestamps with null values
-        logs = pd.Series(time_all.loc[time_all['Date[G]'] == day]["Log midpoint"].values, index=time_all.loc[time_all['Date[G]'] == day]["Time[G]"])
+        # save all midpoints of one day in a new series inclusive all even
+        # timestamps with null values
+        logs = pd.Series(time_all.loc[time_all['Date[G]'] == day]["Log midpoint"].values,
+                         index=time_all.loc[time_all['Date[G]'] == day]["Time[G]"])
         # intepolate all midpoints for even timestamps
         logs.interpolate(method="time", limit_area="inside", inplace=True)
         # prepare a new dataframe with same columns for merging with time_even
-        time_even_day = pd.DataFrame({"Date[G]":day, "Time[G]":logs.index.values, "Log midpoint":logs.values})
-        # extract only the midpoints for even timestamps and drop all the others
-        time_even_day = pd.merge(time_even, time_even_day, on=["Date[G]", "Time[G]"])
+        time_even_day = pd.DataFrame(
+            {"Date[G]": day, "Time[G]": logs.index.values, "Log midpoint": logs.values})
+        # extract only the midpoints for even timestamps and drop all the
+        # others
+        time_even_day = pd.merge(
+            time_even, time_even_day, on=[
+                "Date[G]", "Time[G]"])
         # drop nulls
         time_even_day = time_even_day['Log midpoint_y'].dropna()
         # drop consecutive duplicates (with variance of zero)
-        time_even_day = time_even_day.loc[time_even_day.shift() != time_even_day]
+        time_even_day = time_even_day.loc[time_even_day.shift(
+        ) != time_even_day]
         # compute realised standard error and append result to list
-        realised_stderr.append(np.std(time_even_day)) # TODO fix error with stderror = nan
+        # TODO fix error with stderror = nan
+        realised_stderr.append(np.std(time_even_day))
 
     ticker = grouped["#RIC"].agg(lambda x: x.iloc[-1])
     sigma_s = grouped["Absolute spread"].agg([np.std])["std"]
@@ -227,7 +241,7 @@ def get_new_aggregation_quotes(df):
         'ask_price': ask_price.tolist(),
         'ask_size': ask_size.tolist(),
         'rel_spread': rel_spread.tolist()
-        })
+    })
 
 
 def get_new_aggregation_trades(df):
@@ -244,7 +258,7 @@ def get_new_aggregation_trades(df):
 
     df["V"] = df["Price"] * df["Volume"]
     df["Return"] = df["Price"] / df["Price-1"]
-    df["Time delta"] = (df["Time[G]+1"]-df["Time[G]"]).astype(
+    df["Time delta"] = (df["Time[G]+1"] - df["Time[G]"]).astype(
         'timedelta64[ms]')
     df["Time delta * P"] = df["Time delta"] * df["Price"]
 
@@ -277,7 +291,7 @@ def get_new_aggregation_trades(df):
         'Close': Close.tolist(),
         'High': High.tolist(),
         'Low': Low.tolist()
-        })
+    })
 
 
 def concat_dfs(df1, df2):
@@ -290,39 +304,59 @@ def concat_dfs(df1, df2):
 
 def get_distribution(df, seconds, date):
 
-    df = df[df["Date[G]"]==date]
+    df = df[df["Date[G]"] == date]
     df["Time[G]_today"] = df["Time[G]"] + pd.Timedelta("25567 days")
     df["groupby_intervall"] = pd.to_timedelta(df["Time[G]_today"])
     df["groupby_intervall"] = df["groupby_intervall"].dt.total_seconds().astype(int)
-    df["groupby_intervall"] = (df["groupby_intervall"] / seconds).apply(np.floor)
+    df["groupby_intervall"] = (
+        df["groupby_intervall"] /
+        seconds).apply(
+        np.floor)
 
     opening = df["Time[G]"].iloc[0]
     closing = df["Time[G]"].iloc[-1]
-    day_open = pd.Timestamp(year=1900,
-                            month=1,
-                            day=1,
-                            hour=opening.hour,
-                            minute=opening.minute + int(np.floor(round_seconds_up(opening.second, seconds) / 60)),
-                            second=round_seconds_up(opening.second, seconds) if seconds < 60 else 0)
-    day_close = pd.Timestamp(year=1900,
-                                month=1,
-                                day=1,
-                                hour=closing.hour,
-                                minute=closing.minute,
-                                second=round_seconds_down(closing.second, seconds))
-    df.loc[df["groupby_intervall"]==df["groupby_intervall"].iloc[0], "groupby_intervall"] = np.nan
-    df.loc[df["groupby_intervall"]==df["groupby_intervall"].iloc[-1], "groupby_intervall"] = np.nan
+    day_open = pd.Timestamp(
+        year=1900,
+        month=1,
+        day=1,
+        hour=opening.hour,
+        minute=opening.minute + int(
+            np.floor(
+                round_seconds_up(
+                    opening.second,
+                    seconds) / 60)),
+        second=round_seconds_up(
+            opening.second,
+            seconds) if seconds < 60 else 0)
+    day_close = pd.Timestamp(
+        year=1900,
+        month=1,
+        day=1,
+        hour=closing.hour,
+        minute=closing.minute,
+        second=round_seconds_down(
+            closing.second,
+            seconds))
+    df.loc[df["groupby_intervall"] ==
+           df["groupby_intervall"].iloc[0], "groupby_intervall"] = np.nan
+    df.loc[df["groupby_intervall"] ==
+           df["groupby_intervall"].iloc[-1], "groupby_intervall"] = np.nan
     df = df[~np.isnan(df["groupby_intervall"])]
     grouped = df.groupby("groupby_intervall")
-    counter = grouped.size().value_counts()    
-    
-    intervall_series = pd.date_range(day_open, day_close, freq=(str(seconds) + "S")).values
-    time_even_day = pd.DataFrame({"Date[G]":date, "Time[G]":intervall_series, "groupby_intervall":np.nan})
-    time_all = pd.concat([df[["Date[G]","Time[G]","groupby_intervall"]], time_even_day], ignore_index=True)
-    time_all = time_all.sort_values(["Date[G]","Time[G]"])
+    counter = grouped.size().value_counts()
+
+    intervall_series = pd.date_range(
+        day_open, day_close, freq=(
+            str(seconds) + "S")).values
+    time_even_day = pd.DataFrame(
+        {"Date[G]": date, "Time[G]": intervall_series, "groupby_intervall": np.nan})
+    time_all = pd.concat(
+        [df[["Date[G]", "Time[G]", "groupby_intervall"]], time_even_day], ignore_index=True)
+    time_all = time_all.sort_values(["Date[G]", "Time[G]"])
     counter_zero_intervalls = 0
     for i in range(len(time_all) - 1):
-        if np.isnan(time_all["groupby_intervall"].iloc[i]) and np.isnan(time_all["groupby_intervall"].iloc[i + 1]):
+        if np.isnan(time_all["groupby_intervall"].iloc[i]) and np.isnan(
+                time_all["groupby_intervall"].iloc[i + 1]):
             counter_zero_intervalls += 1
     counter[0] = counter_zero_intervalls
 

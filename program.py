@@ -10,7 +10,7 @@ if __name__ == "__main__":
         "bats": ".BS_",
         "turquoise": ".TQ_",
         "chix": ".CHI_"
-        }
+    }
 
     pp = preprocessing.PreProcessor(input_folder)
 

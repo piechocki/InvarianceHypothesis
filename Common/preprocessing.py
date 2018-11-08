@@ -26,7 +26,7 @@ class PreProcessor:
         print("Getting rows (indices) per ticker and day ... ")
         rows = {}
         for i in range(len(self.files)):
-            print("Processing file " + str(i+1) + " of " +
+            print("Processing file " + str(i + 1) + " of " +
                   str(len(self.files)) + " ...")
             source = self.input_folder + self.files[i]
             ticker = self.files[i].split('_')[1]
@@ -98,13 +98,13 @@ class PreProcessor:
                                  pandashelper.rows_limit_per_iter)
             j = 0
             for df in pandashelper.get_dataframe_by_chunks(source):
-                print("Processing iteration " + str(j+1) + " of " +
-                      str(max_iter) + " in file " + str(i+1) + " of " +
+                print("Processing iteration " + str(j + 1) + " of " +
+                      str(max_iter) + " in file " + str(i + 1) + " of " +
                       str(len(self.rows)) + " ...")
                 if j == 0:
                     df_tail = pandashelper.pd.DataFrame()
                 df = pandashelper.concat_dfs(df_tail, df)
-                if j < max_iter-1:
+                if j < max_iter - 1:
                     last_tail_length = len(df_tail)
                     df, df_tail = self.get_splitted_dataframes(
                         df, ticker, last_tail_length)
@@ -114,7 +114,8 @@ class PreProcessor:
 
     def init_aggregation(self, df_trades, df_quotes):
 
-        distribution = pandashelper.get_distribution(df_trades, 60, df_trades["Date[G]"].iloc[0])
+        distribution = pandashelper.get_distribution(
+            df_trades, 60, df_trades["Date[G]"].iloc[0])
         distribution.to_csv("Verteilung.csv")
         aggregation_trades = pandashelper.get_new_aggregation_trades(
             df_trades)
