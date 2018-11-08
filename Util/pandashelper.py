@@ -27,10 +27,10 @@ def n(x): return pd.to_numeric(x, errors='coerce')
 def d(x): return pd.to_datetime(x, format="%H:%M:%S.%f")
 
 
-def round_ten_up(x): return int(math.ceil(x / 10.0)) * 10
+def round_seconds_up(x, seconds = 10): return int(math.ceil(x / float(seconds))) * seconds
 
 
-def round_ten_down(x): return x - x%10
+def round_seconds_down(x, seconds = 10): return x - x%seconds
 
 
 def round_time(x): return pd.Timestamp(year=1900,
@@ -38,7 +38,7 @@ def round_time(x): return pd.Timestamp(year=1900,
                                        day=1,
                                        hour=x.hour,
                                        minute=x.minute,
-                                       second=round_ten_down(x.second))
+                                       second=round_seconds_down(x.second))
 
 
 def get_dates_with_first_row(source):
@@ -166,13 +166,13 @@ def get_new_aggregation_quotes(df):
                                 day=1,
                                 hour=opening[day].hour,
                                 minute=opening[day].minute,
-                                second=round_ten_up(opening[day].second))
+                                second=round_seconds_up(opening[day].second))
         day_close = pd.Timestamp(year=1900,
                                  month=1,
                                  day=1,
                                  hour=closing[day].hour,
                                  minute=closing[day].minute,
-                                 second=round_ten_down(closing[day].second))
+                                 second=round_seconds_down(closing[day].second))
         ten_sec_series = pd.date_range(day_open, day_close, freq="10S").values
         time_even_day = pd.DataFrame({"Date[G]":day, "Time[G]":ten_sec_series, "Log midpoint":np.nan})
         time_even = time_even.append(time_even_day, ignore_index=True)
@@ -287,3 +287,43 @@ def concat_dfs(df1, df2):
 
 # converters = {'Price': n, 'Volume': n, 'Time[G]': d, 'Bid Price': n,
 #               'Bid Size': n, 'Ask Price': n, 'Ask Size': n}
+
+def get_distribution(df, seconds, date):
+
+    df = df[df["Date[G]"]==date]
+    df["Time[G]_today"] = df["Time[G]"] + pd.Timedelta("25567 days")
+    df["groupby_intervall"] = pd.to_timedelta(df["Time[G]_today"])
+    df["groupby_intervall"] = df["groupby_intervall"].dt.total_seconds().astype(int)
+    df["groupby_intervall"] = (df["groupby_intervall"] / seconds).apply(np.floor)
+
+    opening = df["Time[G]"].iloc[0]
+    closing = df["Time[G]"].iloc[-1]
+    day_open = pd.Timestamp(year=1900,
+                            month=1,
+                            day=1,
+                            hour=opening.hour,
+                            minute=opening.minute + int(np.floor(round_seconds_up(opening.second, seconds) / 60)),
+                            second=round_seconds_up(opening.second, seconds) if seconds < 60 else 0)
+    day_close = pd.Timestamp(year=1900,
+                                month=1,
+                                day=1,
+                                hour=closing.hour,
+                                minute=closing.minute,
+                                second=round_seconds_down(closing.second, seconds))
+    df.loc[df["groupby_intervall"]==df["groupby_intervall"].iloc[0], "groupby_intervall"] = np.nan
+    df.loc[df["groupby_intervall"]==df["groupby_intervall"].iloc[-1], "groupby_intervall"] = np.nan
+    df = df[~np.isnan(df["groupby_intervall"])]
+    grouped = df.groupby("groupby_intervall")
+    counter = grouped.size().value_counts()    
+    
+    intervall_series = pd.date_range(day_open, day_close, freq=(str(seconds) + "S")).values
+    time_even_day = pd.DataFrame({"Date[G]":date, "Time[G]":intervall_series, "groupby_intervall":np.nan})
+    time_all = pd.concat([df[["Date[G]","Time[G]","groupby_intervall"]], time_even_day], ignore_index=True)
+    time_all = time_all.sort_values(["Date[G]","Time[G]"])
+    counter_zero_intervalls = 0
+    for i in range(len(time_all) - 1):
+        if np.isnan(time_all["groupby_intervall"].iloc[i]) and np.isnan(time_all["groupby_intervall"].iloc[i + 1]):
+            counter_zero_intervalls += 1
+    counter[0] = counter_zero_intervalls
+
+    return counter
