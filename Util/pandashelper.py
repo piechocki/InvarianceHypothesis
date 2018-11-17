@@ -27,8 +27,12 @@ def n(x): return pd.to_numeric(x, errors='coerce')
 def d(x): return pd.to_datetime(x, format="%H:%M:%S.%f")
 
 
-def round_seconds_up(x, seconds=10): return 0 if int(math.ceil(
-    x / float(seconds))) * seconds == 60 else int(math.ceil(x / float(seconds))) * seconds
+def round_seconds_up(
+    x, seconds=10, in_range=False): return 0 if int(
+        math.ceil(
+            x / float(seconds))) * seconds == 60 and in_range else int(
+                math.ceil(
+                    x / float(seconds))) * seconds
 
 
 def round_seconds_down(x, seconds=10): return x - x % seconds
@@ -163,12 +167,15 @@ def get_new_aggregation_quotes(df):
 
     for i in range(len(days)):
         day = days[i]
-        day_open = pd.Timestamp(year=1900,
-                                month=1,
-                                day=1,
-                                hour=opening[day].hour,
-                                minute=opening[day].minute,
-                                second=round_seconds_up(opening[day].second))
+        day_open = pd.Timestamp(
+            year=1900,
+            month=1,
+            day=1,
+            hour=opening[day].hour,
+            minute=opening[day].minute,
+            second=round_seconds_up(
+                opening[day].second,
+                in_range=True))
         day_close = pd.Timestamp(
             year=1900,
             month=1,
