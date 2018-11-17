@@ -8,7 +8,7 @@ names = ['#RIC', 'Date[G]', 'Time[G]', 'GMT Offset', 'Type',
 chunk_size = 20000
 header = 0
 compression = "gzip"  # "infer"
-rows_limit_per_iter = 1000000
+rows_limit_per_iter = 5000000
 na_filter = False
 low_memory = True
 engine = "c"
@@ -27,8 +27,8 @@ def n(x): return pd.to_numeric(x, errors='coerce')
 def d(x): return pd.to_datetime(x, format="%H:%M:%S.%f")
 
 
-def round_seconds_up(x, seconds=10): return int(
-    math.ceil(x / float(seconds))) * seconds
+def round_seconds_up(x, seconds=10): return 0 if int(math.ceil(
+    x / float(seconds))) * seconds == 60 else int(math.ceil(x / float(seconds))) * seconds
 
 
 def round_seconds_down(x, seconds=10): return x - x % seconds
@@ -208,8 +208,11 @@ def get_new_aggregation_quotes(df):
         # drop consecutive duplicates (with variance of zero)
         time_even_day = time_even_day.loc[time_even_day.shift(
         ) != time_even_day]
+        # drop last row if interpolated log midpoint is infinite
+        # (because of timeshift without an ending point)
+        if np.isinf(time_even_day.iloc[-1]):
+            time_even_day = time_even_day[:-1]
         # compute realised standard error and append result to list
-        # TODO fix error with stderror = nan
         realised_stderr.append(np.std(time_even_day))
 
     ticker = grouped["#RIC"].agg(lambda x: x.iloc[-1])

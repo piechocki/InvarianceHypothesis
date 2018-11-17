@@ -114,9 +114,8 @@ class PreProcessor:
 
     def init_aggregation(self, df_trades, df_quotes):
 
-        distribution = pandashelper.get_distribution(
-            df_trades, 60, df_trades["Date[G]"].iloc[0])
-        distribution.to_csv("Verteilung.csv")
+        # distribution = pandashelper.get_distribution(
+        #    df_trades, 60, df_trades["Date[G]"].iloc[0])
         aggregation_trades = pandashelper.get_new_aggregation_trades(
             df_trades)
         aggregation_quotes = pandashelper.get_new_aggregation_quotes(
