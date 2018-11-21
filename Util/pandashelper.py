@@ -210,15 +210,13 @@ def get_new_aggregation_quotes(df):
         time_even_day = pd.merge(
             time_even, time_even_day, on=[
                 "Date[G]", "Time[G]"])
+        # drop infinite values of interpolated log midpoint and convert from df to series
+        time_even_day = time_even_day['Log midpoint_y'].replace([np.inf, -np.inf], np.nan)
         # drop nulls
-        time_even_day = time_even_day['Log midpoint_y'].dropna()
+        time_even_day = time_even_day.dropna()
         # drop consecutive duplicates (with variance of zero)
         time_even_day = time_even_day.loc[time_even_day.shift(
         ) != time_even_day]
-        # drop last row if interpolated log midpoint is infinite
-        # (because of timeshift without an ending point)
-        if np.isinf(time_even_day.iloc[-1]):
-            time_even_day = time_even_day[:-1]
         # compute realised standard error and append result to list
         realised_stderr.append(np.std(time_even_day))
 
