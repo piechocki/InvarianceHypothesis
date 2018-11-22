@@ -61,9 +61,12 @@ class PreProcessor:
         df.loc[:, "Time[G]"] = pandashelper.pd.to_datetime(
             df["Time[G]"], format="%H:%M:%S.%f")
 
+        # TODO: Alle Datensätzen außerhalb der Handelszeiten rausschmeißen
         df_trades = df.query("Type=='Trade' and " +
                              "Qualifiers.str.startswith(' [ACT_FLAG1]')")
-        df_quotes = df.query("Type=='Quote'")
+        # TODO: Zusätzlich vier Felder auf > 0 prüfen bei Quotes
+        df_quotes = df.query("Type=='Quote' and " +
+                             "(Qualifiers=='A[ASK_TONE];A[BID_TONE]' or Qualifiers.str.startswith(' [ASK_TONE]') or Qualifiers.str.startswith(' [BID_TONE]'))")
 
         df_trades.loc[:, "Price"] = pandashelper.pd.to_numeric(
             df_trades["Price"], errors="coerce")

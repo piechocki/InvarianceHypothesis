@@ -8,7 +8,7 @@ names = ['#RIC', 'Date[G]', 'Time[G]', 'GMT Offset', 'Type',
 chunk_size = 20000
 header = 0
 compression = "gzip"  # "infer"
-rows_limit_per_iter = 5000000
+rows_limit_per_iter = 1000000
 na_filter = False
 low_memory = True
 engine = "c"
@@ -137,6 +137,24 @@ def get_new_aggregation_quotes(df):
 
     df["Time delta"] = (df["Time[G]+1"] - df["Time[G]"]).astype(
         'timedelta64[ms]')
+
+    #dates = list(df.groupby("Date[G]").groups.keys())
+    #for i in range(len(dates)):
+    #    date = dates[i]
+    #    firsts = df.index[df["Date[G]"] == date].tolist()
+    #    lasts = df.index[(df["Date[G]"] == date) & (df["Bid Price"] > 0) & (df["Bid Size"] > 0) & (df["Ask Price"] > 0) & (df["Ask Size"] > 0)].tolist()
+    #    for last in lasts:
+    #        if last > firsts[0]:
+    #            break
+    #    remove = []
+    #    for first in firsts:
+    #        if first < last:
+    #            remove.append(first)
+    #        else:
+    #            break
+    #    df.drop(remove, inplace=True)
+
+    df.head(50000).to_csv("quotes.csv")
 
     df["Bid Price"] = df["Bid Price"].fillna(method="ffill")
     df["Bid Size"] = df["Bid Size"].fillna(method="ffill")
