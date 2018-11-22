@@ -149,31 +149,11 @@ def get_new_aggregation_quotes(df):
     df["Time delta"] = (df["Time[G]+1"] - df["Time[G]"]).astype(
         'timedelta64[ms]')
 
-    # dates = list(df.groupby("Date[G]").groups.keys())
-    # for i in range(len(dates)):
-    #    date = dates[i]
-    #    firsts = df.index[df["Date[G]"] == date].tolist()
-    #    lasts = df.index[(df["Date[G]"] == date) & (df["Bid Price"] > 0) &
-    #                     (df["Bid Size"] > 0) & (df["Ask Price"] > 0) &
-    #                     (df["Ask Size"] > 0)].tolist()
-    #    for last in lasts:
-    #        if last > firsts[0]:
-    #            break
-    #    remove = []
-    #    for first in firsts:
-    #        if first < last:
-    #            remove.append(first)
-    #        else:
-    #            break
-    #    df.drop(remove, inplace=True)
-    #
-    df.head(50000).to_csv("quotes.csv")
-
     df["Bid Price"] = df["Bid Price"].fillna(method="ffill")
     df["Bid Size"] = df["Bid Size"].fillna(method="ffill")
     df["Ask Price"] = df["Ask Price"].fillna(method="ffill")
     df["Ask Size"] = df["Ask Size"].fillna(method="ffill")
-
+    
     df["Absolute spread"] = df["Ask Price"] - df["Bid Price"]
     df["Mid quote"] = (df["Ask Price"] + df["Bid Price"]) / 2
     df["Relative spread"] = df["Absolute spread"] / df["Mid quote"] * 10000
@@ -391,3 +371,8 @@ def get_distribution(df, seconds, date):
     counter[0] = counter_zero_intervals
 
     return counter
+
+
+def convert_column_to_numeric(df, col_name):
+
+    df.loc[:, col_name] = pd.to_numeric(df[col_name], errors="coerce")

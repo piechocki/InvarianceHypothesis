@@ -56,35 +56,48 @@ class PreProcessor:
         source = self.get_source_by_ticker(ticker)
         return pandashelper.get_dataframe_by_iter(source, iterations)
 
-    @staticmethod
-    def get_filtered_dataframes(df):
+    def get_filtered_dataframes(self, df):
 
         df.loc[:, "Time[G]"] = pandashelper.pd.to_datetime(
             df["Time[G]"], format="%H:%M:%S.%f")
 
-        # TODO: Alle Datensätzen außerhalb der Handelszeiten rausschmeißen
+        df.loc[:, "Time[G]"] = df["Time[G]"] + pandashelper.pd.Timedelta(hours=df["GMT Offset"].iloc[0])
+        bod = pandashelper.pd.Timestamp("1900-01-01 09:00:00.000")
+        eod = pandashelper.pd.Timestamp("1900-01-01 16:30:00.000")
+        df = df.loc[(df["Time[G]"] >= bod) & (df["Time[G]"] <= eod)]
+
         df_trades = df.query("Type=='Trade' and " +
                              "Qualifiers.str.startswith(' [ACT_FLAG1]')")
-        # TODO: Zusätzlich vier Felder auf > 0 prüfen bei Quotes
-        df_quotes = df.query("Type=='Quote' and " +
-                             "(Qualifiers=='A[ASK_TONE];A[BID_TONE]' or " +
-                             "Qualifiers.str.startswith(' [ASK_TONE]') or " +
-                             "Qualifiers.str.startswith(' [BID_TONE]'))")
+        df_quotes = df.query("Type=='Quote'")
 
-        df_trades.loc[:, "Price"] = pandashelper.pd.to_numeric(
-            df_trades["Price"], errors="coerce")
-        df_trades.loc[:, "Volume"] = pandashelper.pd.to_numeric(
-            df_trades["Volume"], errors="coerce")
-        df_quotes.loc[:, "Bid Price"] = pandashelper.pd.to_numeric(
-            df_quotes["Bid Price"], errors="coerce")
-        df_quotes.loc[:, "Bid Size"] = pandashelper.pd.to_numeric(
-            df_quotes["Bid Size"], errors="coerce")
-        df_quotes.loc[:, "Ask Price"] = pandashelper.pd.to_numeric(
-            df_quotes["Ask Price"], errors="coerce")
-        df_quotes.loc[:, "Ask Size"] = pandashelper.pd.to_numeric(
-            df_quotes["Ask Size"], errors="coerce")
+        pandashelper.convert_column_to_numeric(df_trades, "Price")
+        pandashelper.convert_column_to_numeric(df_trades, "Volume")
+        pandashelper.convert_column_to_numeric(df_quotes, "Bid Price")
+        pandashelper.convert_column_to_numeric(df_quotes, "Bid Size")
+        pandashelper.convert_column_to_numeric(df_quotes, "Ask Price")
+        pandashelper.convert_column_to_numeric(df_quotes, "Ask Size")
+        df_quotes = self.drop_quotes_prolog(df_quotes)
 
         return df_trades, df_quotes
+
+    def drop_quotes_prolog(self, df):
+
+        remove = []
+        dates = list(df.groupby("Date[G]").groups.keys())
+        for date in dates:
+            rows_of_day = df.index[df["Date[G]"] == date].tolist()
+            valid_rows = df.index[(df["Date[G]"] == date) &
+                             (df["Bid Price"] > 0) &
+                             (df["Bid Size"] > 0) &
+                             (df["Ask Price"] > 0) &
+                             (df["Ask Size"] > 0)].tolist()            
+            first_valid = valid_rows[0]
+            for row in rows_of_day:
+                if row < first_valid:
+                    remove.append(row)
+                else:
+                    break
+        return df.drop(remove)
 
     def get_splitted_dataframes(self, df, ticker, last_tail_length):
 
