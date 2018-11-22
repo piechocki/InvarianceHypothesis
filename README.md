@@ -1,10 +1,10 @@
 # InvarianceHypothesis
 
-This project contains several tools for analyzing trade and quote datasets from the Thomson Reuters Tick History (TRTH) as used in my master thesis with the title 'Marktmikrostruktur-Invarianz: Eine empirische Analyse europäischer Aktien'.
+This project contains several tools for analyzing trade and quote datasets from the Thomson Reuters Tick History (TRTH) as used in my master thesis with the title "Marktmikrostruktur-Invarianz: Eine empirische Analyse europäischer Aktien".
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. To use all functionalities you have to get likewise structured data compared to those descriped in my thesis.
 
 ### Prerequisites
 
