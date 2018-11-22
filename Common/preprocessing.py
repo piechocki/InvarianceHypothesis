@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 import os
 import re
 import json
@@ -62,9 +64,15 @@ class PreProcessor:
 
         df.loc[:, "Time[G]"] = pandashelper.pd.to_datetime(
             df["Time[G]"], format="%H:%M:%S.%f")
-
+        # trading hours of DAX Xetra and CAC Paris:
+        # 9:00 am to 5:30 pm (Berlin local time)
+        # trading hours of MTFs:
+        # 8:00 am to 4:30 pm (London local time)
+        # add GMT offset plus difference between Berlin and London local time
         df.loc[:, "Time[G]"] = df["Time[G]"] + pandashelper.pd.Timedelta(
-            hours=df["GMT Offset"].iloc[0])        
+            hours=df["GMT Offset"].iloc[0]+int(
+                self.marketplace != "DAX Xetra" and
+                self.marketplace != "CAC Paris"))
         df = df.loc[(df["Time[G]"] >= self.bod) & (df["Time[G]"] <= self.eod)]
 
         df_trades = df.query("Type=='Trade' and " +
@@ -88,7 +96,7 @@ class PreProcessor:
     def init_aggregations(self):
 
         print("Getting aggregations per ticker and day ...")
-        for i in range(1): #range(len(self.rows)):
+        for i in range(1):  # range(len(self.rows)):
             ticker = list(self.rows)[i]
             source = self.get_source_by_ticker(ticker)
             count_rows = self.rows[ticker][list(self.rows[ticker].keys())[-1]]

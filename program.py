@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 import Common.preprocessing as preprocessing
 
 if __name__ == "__main__":

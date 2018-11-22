@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
 import math
@@ -154,11 +156,12 @@ def get_new_aggregation_quotes(df):
     df["Ask Price"] = df["Ask Price"].fillna(method="ffill")
     df["Ask Size"] = df["Ask Size"].fillna(method="ffill")
 
-    # drop all rows that still have zero values for price or size after padding above
+    # drop all rows that still have zero values for price or
+    # size after padding above
     valid_quotes = df.index[(df["Bid Price"] > 0) &
-                          (df["Bid Size"] > 0) &
-                          (df["Ask Price"] > 0) &
-                          (df["Ask Size"] > 0)].tolist()            
+                            (df["Bid Size"] > 0) &
+                            (df["Ask Price"] > 0) &
+                            (df["Ask Size"] > 0)].tolist()
     df = df.loc[valid_quotes, :]
     
     df["Absolute spread"] = df["Ask Price"] - df["Bid Price"]
@@ -181,7 +184,9 @@ def get_new_aggregation_quotes(df):
     closing = grouped["Time[G]"].agg(lambda x: x.iloc[-1])
 
     time_even = pd.DataFrame(
-        {"Date[G]": [], "Time[G]": [], "Log midpoint": []})
+        {"Date[G]": [],
+         "Time[G]": [],
+         "Log midpoint": []})
 
     for day in days:
         day_open = pd.Timestamp(
@@ -203,26 +208,33 @@ def get_new_aggregation_quotes(df):
                 closing[day].second))
         ten_sec_series = pd.date_range(day_open, day_close, freq="10S").values
         time_even_day = pd.DataFrame(
-            {"Date[G]": day, "Time[G]": ten_sec_series, "Log midpoint": np.nan})
+            {"Date[G]": day,
+             "Time[G]": ten_sec_series,
+             "Log midpoint": np.nan})
         time_even = time_even.append(time_even_day, ignore_index=True)
 
     time_all = pd.concat(
-        [df[["Date[G]", "Time[G]", "Log midpoint"]], time_even], ignore_index=True)
+        [df[["Date[G]", "Time[G]", "Log midpoint"]], time_even],
+        ignore_index=True)
     time_all = time_all.sort_values(["Date[G]", "Time[G]"])
     realised_stderr = []
 
     for day in days:
         # save all midpoints of one day in a new series inclusive all even
         # timestamps with null values
-        logs = pd.Series(time_all.loc[time_all['Date[G]'] == day]["Log midpoint"].values,
-                         index=time_all.loc[time_all['Date[G]'] == day]["Time[G]"])
-        # drop all duplicates for same millisecond (keep last occurance of each millisecond)
+        logs = pd.Series(
+            time_all.loc[time_all['Date[G]'] == day]["Log midpoint"].values,
+            index=time_all.loc[time_all['Date[G]'] == day]["Time[G]"])
+        # drop all duplicates for same millisecond
+        # (keep last occurance of each millisecond)
         logs = logs.groupby(logs.index).last()
         # intepolate all midpoints for even timestamps
         logs.interpolate(method="time", limit_area="inside", inplace=True)
         # prepare a new dataframe with same columns for merging with time_even
         time_even_day = pd.DataFrame(
-            {"Date[G]": day, "Time[G]": logs.index.values, "Log midpoint": logs.values})
+            {"Date[G]": day,
+             "Time[G]": logs.index.values,
+             "Log midpoint": logs.values})
         # extract only the midpoints for even timestamps and drop all the
         # others
         time_even_day = pd.merge(
@@ -270,7 +282,8 @@ def get_new_aggregation_quotes(df):
 
 def get_new_aggregation_trades(df):
 
-    df = get_dataframe_with_shifted_column(df, "Price", "Price-1", forward=False)
+    df = get_dataframe_with_shifted_column(df, "Price", "Price-1",
+                                           forward=False)
     df = get_dataframe_with_shifted_column(df, "Time[G]", "Time[G]+1")
 
     df["V"] = df["Price"] * df["Volume"]
@@ -324,11 +337,10 @@ def get_distribution(df, seconds, date):
     df = df[df["Date[G]"] == date]
     df["Time[G]_today"] = df["Time[G]"] + pd.Timedelta("25567 days")
     df["groupby_intervall"] = pd.to_timedelta(df["Time[G]_today"])
-    df["groupby_intervall"] = df["groupby_intervall"].dt.total_seconds().astype(int)
     df["groupby_intervall"] = (
-        df["groupby_intervall"] /
-        seconds).apply(
-        np.floor)
+        df["groupby_intervall"].dt.total_seconds().astype(int))
+    df["groupby_intervall"] = (
+        df["groupby_intervall"] / seconds).apply(np.floor)
 
     opening = df["Time[G]"].iloc[0]
     closing = df["Time[G]"].iloc[-1]
@@ -366,9 +378,12 @@ def get_distribution(df, seconds, date):
         day_open, day_close, freq=(
             str(seconds) + "S")).values
     time_even_day = pd.DataFrame(
-        {"Date[G]": date, "Time[G]": interval_series, "groupby_intervall": np.nan})
+        {"Date[G]": date,
+         "Time[G]": interval_series,
+         "groupby_intervall": np.nan})
     time_all = pd.concat(
-        [df[["Date[G]", "Time[G]", "groupby_intervall"]], time_even_day], ignore_index=True)
+        [df[["Date[G]", "Time[G]", "groupby_intervall"]], time_even_day],
+        ignore_index=True)
     time_all = time_all.sort_values(["Date[G]", "Time[G]"])
     counter_zero_intervals = 0
     for j in range(len(time_all) - 1):
