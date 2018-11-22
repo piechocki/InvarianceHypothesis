@@ -56,10 +56,10 @@ def get_dates_with_first_row(source):
     date = ""
     for row in reader:
         if row["Date[G]"].iloc[-1] != date:
-            for i in range(chunksize):
-                if date != row["Date[G]"].iloc[i]:
-                    date = row["Date[G]"].iloc[i]
-                    dates[str(date)] = int(row.index.values.astype(int)[i])
+            for j in range(chunksize):
+                if date != row["Date[G]"].iloc[j]:
+                    date = row["Date[G]"].iloc[j]
+                    dates[str(date)] = int(row.index.values.astype(int)[j])
                     break
     return dates
 
@@ -74,9 +74,9 @@ def get_dataframe_by_rows(source, first_row, last_row):
                        low_memory=False)
 
 
-def get_dataframe_by_iter(source, iter):
+def get_dataframe_by_iter(source, iteration):
 
-    skiprows = iter * rows_limit_per_iter + 1
+    skiprows = iteration * rows_limit_per_iter + 1
     nrows = rows_limit_per_iter
     return pd.read_csv(source, engine="c", header=None, compression="gzip",
                        na_filter=False, nrows=nrows, skiprows=skiprows,
@@ -128,21 +128,34 @@ def get_empty_aggregation_quotes():
     })
 
 
+def get_dataframe_with_shifted_column(df, col_to_shift, new_col_name,
+                                      forward=True, drop_bod_eod_value=True):
+
+    df[new_col_name] = df[col_to_shift].shift(-1 if forward else 1)
+    if drop_bod_eod_value:
+        if forward:
+            bod_eod = df.groupby("Date[G]").tail(1).index.tolist()
+        else:
+            bod_eod = df.groupby("Date[G]").head(1).index.tolist()
+        for row in bod_eod:
+            df.at[row, new_col_name] = np.NaN
+
+    return df
+
+
 def get_new_aggregation_quotes(df):
 
-    df["Time[G]+1"] = df["Time[G]"].shift(-1)
-    tails = df.groupby("Date[G]").tail(1).index.tolist()
-    for i in range(len(tails)):
-        df.at[tails[i], "Time[G]+1"] = np.NaN
-
+    df = get_dataframe_with_shifted_column(df, "Time[G]", "Time[G]+1")
     df["Time delta"] = (df["Time[G]+1"] - df["Time[G]"]).astype(
         'timedelta64[ms]')
 
-    #dates = list(df.groupby("Date[G]").groups.keys())
-    #for i in range(len(dates)):
+    # dates = list(df.groupby("Date[G]").groups.keys())
+    # for i in range(len(dates)):
     #    date = dates[i]
     #    firsts = df.index[df["Date[G]"] == date].tolist()
-    #    lasts = df.index[(df["Date[G]"] == date) & (df["Bid Price"] > 0) & (df["Bid Size"] > 0) & (df["Ask Price"] > 0) & (df["Ask Size"] > 0)].tolist()
+    #    lasts = df.index[(df["Date[G]"] == date) & (df["Bid Price"] > 0) &
+    #                     (df["Bid Size"] > 0) & (df["Ask Price"] > 0) &
+    #                     (df["Ask Size"] > 0)].tolist()
     #    for last in lasts:
     #        if last > firsts[0]:
     #            break
@@ -153,7 +166,7 @@ def get_new_aggregation_quotes(df):
     #        else:
     #            break
     #    df.drop(remove, inplace=True)
-
+    #
     df.head(50000).to_csv("quotes.csv")
 
     df["Bid Price"] = df["Bid Price"].fillna(method="ffill")
@@ -183,8 +196,7 @@ def get_new_aggregation_quotes(df):
     time_even = pd.DataFrame(
         {"Date[G]": [], "Time[G]": [], "Log midpoint": []})
 
-    for i in range(len(days)):
-        day = days[i]
+    for day in days:
         day_open = pd.Timestamp(
             year=1900,
             month=1,
@@ -212,8 +224,7 @@ def get_new_aggregation_quotes(df):
     time_all = time_all.sort_values(["Date[G]", "Time[G]"])
     realised_stderr = []
 
-    for i in range(len(days)):
-        day = days[i]
+    for day in days:
         # save all midpoints of one day in a new series inclusive all even
         # timestamps with null values
         logs = pd.Series(time_all.loc[time_all['Date[G]'] == day]["Log midpoint"].values,
@@ -253,12 +264,12 @@ def get_new_aggregation_quotes(df):
     rel_spread = grouped["Time delta * Relative spread"].\
         agg([np.sum])["sum"] / divisor
     date = grouped["Date[G]"].agg(lambda x: x.iloc[-1])
-    N = grouped["#RIC"].agg(lambda x: len(x))
+    n_quotes = grouped["#RIC"].agg(lambda x: len(x))
 
     return pd.DataFrame({
         'ticker': ticker.tolist(),
         'date': date.tolist(),
-        'N': N.tolist(),
+        'N': n_quotes.tolist(),
         'sigma_s': sigma_s.tolist(),
         'sigma_m': sigma_m.tolist(),
         'sigma_m_log': realised_stderr,
@@ -272,15 +283,8 @@ def get_new_aggregation_quotes(df):
 
 def get_new_aggregation_trades(df):
 
-    df["Price-1"] = df["Price"].shift(1)
-    heads = df.groupby("Date[G]").head(1).index.tolist()
-    for i in range(len(heads)):
-        df.at[heads[i], "Price-1"] = np.NaN
-
-    df["Time[G]+1"] = df["Time[G]"].shift(-1)
-    tails = df.groupby("Date[G]").tail(1).index.tolist()
-    for i in range(len(tails)):
-        df.at[tails[i], "Time[G]+1"] = np.NaN
+    df = get_dataframe_with_shifted_column(df, "Price", "Price-1", forward=False)
+    df = get_dataframe_with_shifted_column(df, "Time[G]", "Time[G]+1")
 
     df["V"] = df["Price"] * df["Volume"]
     df["Return"] = df["Price"] / df["Price-1"]
@@ -290,33 +294,33 @@ def get_new_aggregation_trades(df):
 
     grouped = df.groupby("Date[G]")
 
-    ticker = grouped["#RIC"].agg(lambda x: x.iloc[-1])
-    V = grouped["V"].agg([np.sum])["sum"]
+    ticker = grouped["#RIC"].agg(lambda y: y.iloc[-1])
+    v = grouped["V"].agg([np.sum])["sum"]
     sigma_r = grouped["Return"].agg([np.std])["std"]
     sigma_p = grouped["Price"].agg([np.std])["std"]
-    X = grouped["Volume"].agg([np.sum])["sum"]
-    P = grouped["Time delta * P"].agg([np.sum])["sum"] \
+    x = grouped["Volume"].agg([np.sum])["sum"]
+    p = grouped["Time delta * P"].agg([np.sum])["sum"] \
         / grouped["Time delta"].agg([np.sum])["sum"]
-    Open = grouped["Price"].agg(lambda x: x.iloc[0])
-    Close = grouped["Price"].agg(lambda x: x.iloc[-1])
-    High = grouped["Price"].agg([np.amax])["amax"]
-    Low = grouped["Price"].agg([np.amin])["amin"]
-    date = grouped["Date[G]"].agg(lambda x: x.iloc[-1])
-    N = grouped["#RIC"].agg(lambda x: len(x))
+    p_open = grouped["Price"].agg(lambda y: y.iloc[0])
+    p_close = grouped["Price"].agg(lambda y: y.iloc[-1])
+    p_high = grouped["Price"].agg([np.amax])["amax"]
+    p_low = grouped["Price"].agg([np.amin])["amin"]
+    date = grouped["Date[G]"].agg(lambda y: y.iloc[-1])
+    n_trades = grouped["#RIC"].agg(lambda y: len(y))
 
     return pd.DataFrame({
         'ticker': ticker.tolist(),
         'date': date.tolist(),
-        'V': V.tolist(),
+        'V': v.tolist(),
         'sigma_r': sigma_r.tolist(),
         'sigma_p': sigma_p.tolist(),
-        'P': P.tolist(),
-        'N': N.tolist(),
-        'X': X.tolist(),
-        'Open': Open.tolist(),
-        'Close': Close.tolist(),
-        'High': High.tolist(),
-        'Low': Low.tolist()
+        'P': p.tolist(),
+        'N': n_trades.tolist(),
+        'X': x.tolist(),
+        'Open': p_open.tolist(),
+        'Close': p_close.tolist(),
+        'High': p_high.tolist(),
+        'Low': p_low.tolist()
     })
 
 
@@ -371,19 +375,19 @@ def get_distribution(df, seconds, date):
     grouped = df.groupby("groupby_intervall")
     counter = grouped.size().value_counts()
 
-    intervall_series = pd.date_range(
+    interval_series = pd.date_range(
         day_open, day_close, freq=(
             str(seconds) + "S")).values
     time_even_day = pd.DataFrame(
-        {"Date[G]": date, "Time[G]": intervall_series, "groupby_intervall": np.nan})
+        {"Date[G]": date, "Time[G]": interval_series, "groupby_intervall": np.nan})
     time_all = pd.concat(
         [df[["Date[G]", "Time[G]", "groupby_intervall"]], time_even_day], ignore_index=True)
     time_all = time_all.sort_values(["Date[G]", "Time[G]"])
-    counter_zero_intervalls = 0
-    for i in range(len(time_all) - 1):
-        if np.isnan(time_all["groupby_intervall"].iloc[i]) and np.isnan(
-                time_all["groupby_intervall"].iloc[i + 1]):
-            counter_zero_intervalls += 1
-    counter[0] = counter_zero_intervalls
+    counter_zero_intervals = 0
+    for j in range(len(time_all) - 1):
+        if np.isnan(time_all["groupby_intervall"].iloc[j]) and np.isnan(
+                time_all["groupby_intervall"].iloc[j + 1]):
+            counter_zero_intervals += 1
+    counter[0] = counter_zero_intervals
 
     return counter

@@ -49,14 +49,15 @@ class PreProcessor:
         file = list(filter(r.match, self.files))[0]
         return self.input_folder + file
 
-    def get_dataframe_per_iter(self, ticker, iter):
+    def get_dataframe_per_iter(self, ticker, iterations):
 
         if not self.rows:
             return None
         source = self.get_source_by_ticker(ticker)
-        return pandashelper.get_dataframe_by_iter(source, iter)
+        return pandashelper.get_dataframe_by_iter(source, iterations)
 
-    def get_filtered_dataframes(self, df):
+    @staticmethod
+    def get_filtered_dataframes(df):
 
         df.loc[:, "Time[G]"] = pandashelper.pd.to_datetime(
             df["Time[G]"], format="%H:%M:%S.%f")
@@ -66,7 +67,9 @@ class PreProcessor:
                              "Qualifiers.str.startswith(' [ACT_FLAG1]')")
         # TODO: Zusätzlich vier Felder auf > 0 prüfen bei Quotes
         df_quotes = df.query("Type=='Quote' and " +
-                             "(Qualifiers=='A[ASK_TONE];A[BID_TONE]' or Qualifiers.str.startswith(' [ASK_TONE]') or Qualifiers.str.startswith(' [BID_TONE]'))")
+                             "(Qualifiers=='A[ASK_TONE];A[BID_TONE]' or " +
+                             "Qualifiers.str.startswith(' [ASK_TONE]') or " +
+                             "Qualifiers.str.startswith(' [BID_TONE]'))")
 
         df_trades.loc[:, "Price"] = pandashelper.pd.to_numeric(
             df_trades["Price"], errors="coerce")
@@ -100,12 +103,11 @@ class PreProcessor:
             max_iter = math.ceil(count_rows /
                                  pandashelper.rows_limit_per_iter)
             j = 0
+            df_tail = pandashelper.pd.DataFrame()
             for df in pandashelper.get_dataframe_by_chunks(source):
                 print("Processing iteration " + str(j + 1) + " of " +
                       str(max_iter) + " in file " + str(i + 1) + " of " +
                       str(len(self.rows)) + " ...")
-                if j == 0:
-                    df_tail = pandashelper.pd.DataFrame()
                 df = pandashelper.concat_dfs(df_tail, df)
                 if j < max_iter - 1:
                     last_tail_length = len(df_tail)
