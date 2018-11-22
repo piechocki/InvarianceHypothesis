@@ -1,6 +1,6 @@
 # InvarianceHypothesis
 
-This project contains several tools for analyzing trade and quote datasets downloaded from Thomson Reuters as used in my master thesis with the title 'Marktmikrostruktur-Invarianz: Eine empirische Analyse europäischer Aktien'.
+This project contains several tools for analyzing trade and quote datasets from the Thomson Reuters Tick History (TRTH) as used in my master thesis with the title 'Marktmikrostruktur-Invarianz: Eine empirische Analyse europäischer Aktien'.
 
 ## Getting Started
 
@@ -18,11 +18,25 @@ Of course you can install the packages listed in the .txt file manually via the 
 
 ## Running the program
 
-The main entry point is the file program.py. If you configure your interpreter to execute this file you are given an instance of the preprocessor class. Out of this class you have access to all functionalities implemented in this project.
+The main entry point is the file program.py. If you configure your interpreter to execute this file you are given an instance of the preprocessor class by default. Out of this class you have access to all functionalities implemented in this project.
 
-## Deployment
+### Modules
 
-Add additional notes about how to deploy this on a live system
+Apart from the initialization of the program in program.py, all functions and methods are outsourced in further modules:
+
+* preprocessing (in the folder ./Common) containing all "spanning" functions that are implemented with standard python basically
+* pandashelper (in the folder ./Util) containing all direct data operations, implemented with specific data science functions from pandas mainly and numpy in part
+
+These modules will be imported from the program.py already of course. You can access it's functions from the main program level via
+```
+preprocessing.your_function_call()
+preprocessing.pandashelper.your_function_call()
+```
+or import the modules manually wherever you are with
+```
+import Common.preprocessing
+import Util.pandashelper
+```
 
 ## Built With
 
@@ -36,13 +50,3 @@ Add additional notes about how to deploy this on a live system
 * **Martin Piechocki** - *Initial work* - [piechocki](https://github.com/piechocki)
 
 See the list of [contributors](https://github.com/piechocki/InvarianceHypothesis/contributors) who participated in this project.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
