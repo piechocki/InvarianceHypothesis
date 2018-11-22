@@ -7,8 +7,8 @@ names = ['#RIC', 'Date[G]', 'Time[G]', 'GMT Offset', 'Type',
          'Bid Size', 'Ask Price', 'Ask Size', 'Qualifiers']
 chunk_size = 20000
 header = 0
-compression = "gzip"  # "infer"
-rows_limit_per_iter = 1000000
+compression = "gzip"
+rows_limit_per_iter = 5000000
 na_filter = False
 low_memory = True
 engine = "c"
@@ -153,6 +153,13 @@ def get_new_aggregation_quotes(df):
     df["Bid Size"] = df["Bid Size"].fillna(method="ffill")
     df["Ask Price"] = df["Ask Price"].fillna(method="ffill")
     df["Ask Size"] = df["Ask Size"].fillna(method="ffill")
+
+    # drop all rows that still have zero values for price or size after padding above
+    valid_quotes = df.index[(df["Bid Price"] > 0) &
+                          (df["Bid Size"] > 0) &
+                          (df["Ask Price"] > 0) &
+                          (df["Ask Size"] > 0)].tolist()            
+    df = df.loc[valid_quotes, :]
     
     df["Absolute spread"] = df["Ask Price"] - df["Bid Price"]
     df["Mid quote"] = (df["Ask Price"] + df["Bid Price"]) / 2
@@ -209,6 +216,8 @@ def get_new_aggregation_quotes(df):
         # timestamps with null values
         logs = pd.Series(time_all.loc[time_all['Date[G]'] == day]["Log midpoint"].values,
                          index=time_all.loc[time_all['Date[G]'] == day]["Time[G]"])
+        # drop all duplicates for same millisecond (keep last occurance of each millisecond)
+        logs = logs.groupby(logs.index).last()
         # intepolate all midpoints for even timestamps
         logs.interpolate(method="time", limit_area="inside", inplace=True)
         # prepare a new dataframe with same columns for merging with time_even
@@ -219,10 +228,8 @@ def get_new_aggregation_quotes(df):
         time_even_day = pd.merge(
             time_even, time_even_day, on=[
                 "Date[G]", "Time[G]"])
-        # drop infinite values of interpolated log midpoint and convert from df to series
-        time_even_day = time_even_day['Log midpoint_y'].replace([np.inf, -np.inf], np.nan)
-        # drop nulls
-        time_even_day = time_even_day.dropna()
+        # keep only the the log midpoint column
+        time_even_day = time_even_day['Log midpoint_y']
         # drop consecutive duplicates (with variance of zero)
         time_even_day = time_even_day.loc[time_even_day.shift(
         ) != time_even_day]

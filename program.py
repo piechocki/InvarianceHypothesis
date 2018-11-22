@@ -3,7 +3,7 @@ import Common.preprocessing as preprocessing
 if __name__ == "__main__":
 
     input_folder = "C:/Users/marti/OneDrive/Documents/OLAT/Master/" + \
-        "4. Semester/Masterarbeit/Daten/CAC Paris"
+        "4. Semester/Masterarbeit/Daten/DAX Xetra"
     additional_filter = {
         "xetra": ".DE_",
         "euronext": ".PA_",

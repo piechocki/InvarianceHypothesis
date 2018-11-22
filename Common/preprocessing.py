@@ -14,6 +14,8 @@ class PreProcessor:
         self.marketplace = self.get_marketplace() if additional_filter == \
             "" else self.get_marketplace() + " " + additional_filter[1:3]
         self.files = []
+        self.bod = pandashelper.pd.Timestamp("1900-01-01 09:00:00.000")
+        self.eod = pandashelper.pd.Timestamp("1900-01-01 16:30:00.000")
         for file in os.listdir(self.input_folder):
             if file.endswith(".csv.gz") and additional_filter in file:
                 self.files.append(file)
@@ -61,43 +63,20 @@ class PreProcessor:
         df.loc[:, "Time[G]"] = pandashelper.pd.to_datetime(
             df["Time[G]"], format="%H:%M:%S.%f")
 
-        df.loc[:, "Time[G]"] = df["Time[G]"] + pandashelper.pd.Timedelta(hours=df["GMT Offset"].iloc[0])
-        bod = pandashelper.pd.Timestamp("1900-01-01 09:00:00.000")
-        eod = pandashelper.pd.Timestamp("1900-01-01 16:30:00.000")
-        df = df.loc[(df["Time[G]"] >= bod) & (df["Time[G]"] <= eod)]
+        df.loc[:, "Time[G]"] = df["Time[G]"] + pandashelper.pd.Timedelta(
+            hours=df["GMT Offset"].iloc[0])        
+        df = df.loc[(df["Time[G]"] >= self.bod) & (df["Time[G]"] <= self.eod)]
 
         df_trades = df.query("Type=='Trade' and " +
                              "Qualifiers.str.startswith(' [ACT_FLAG1]')")
         df_quotes = df.query("Type=='Quote'")
 
-        pandashelper.convert_column_to_numeric(df_trades, "Price")
-        pandashelper.convert_column_to_numeric(df_trades, "Volume")
-        pandashelper.convert_column_to_numeric(df_quotes, "Bid Price")
-        pandashelper.convert_column_to_numeric(df_quotes, "Bid Size")
-        pandashelper.convert_column_to_numeric(df_quotes, "Ask Price")
-        pandashelper.convert_column_to_numeric(df_quotes, "Ask Size")
-        df_quotes = self.drop_quotes_prolog(df_quotes)
+        for col in ["Price", "Volume"]:
+            pandashelper.convert_column_to_numeric(df_trades, col)
+        for col in ["Bid Price", "Bid Size", "Ask Price", "Ask Size"]:
+            pandashelper.convert_column_to_numeric(df_quotes, col)
 
         return df_trades, df_quotes
-
-    def drop_quotes_prolog(self, df):
-
-        remove = []
-        dates = list(df.groupby("Date[G]").groups.keys())
-        for date in dates:
-            rows_of_day = df.index[df["Date[G]"] == date].tolist()
-            valid_rows = df.index[(df["Date[G]"] == date) &
-                             (df["Bid Price"] > 0) &
-                             (df["Bid Size"] > 0) &
-                             (df["Ask Price"] > 0) &
-                             (df["Ask Size"] > 0)].tolist()            
-            first_valid = valid_rows[0]
-            for row in rows_of_day:
-                if row < first_valid:
-                    remove.append(row)
-                else:
-                    break
-        return df.drop(remove)
 
     def get_splitted_dataframes(self, df, ticker, last_tail_length):
 
@@ -109,7 +88,7 @@ class PreProcessor:
     def init_aggregations(self):
 
         print("Getting aggregations per ticker and day ...")
-        for i in range(len(self.rows)):
+        for i in range(1): #range(len(self.rows)):
             ticker = list(self.rows)[i]
             source = self.get_source_by_ticker(ticker)
             count_rows = self.rows[ticker][list(self.rows[ticker].keys())[-1]]
