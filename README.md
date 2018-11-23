@@ -47,6 +47,6 @@ import Util.pandashelper
 
 ## Authors
 
-* **Martin Piechocki** - *Initial work* - [piechocki](https://github.com/piechocki)
+* **M. Piechocki** - *Initial work* - [piechocki](https://github.com/piechocki)
 
 See the list of [contributors](https://github.com/piechocki/InvarianceHypothesis/contributors) who participated in this project.
