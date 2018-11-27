@@ -26,21 +26,24 @@ For i = 1 To ActiveDocument.Paragraphs.Count
         
             If file_txt <> "" Then
             
+                ' Save the previous file_txt if it's not empty
                 Call save_file(file, file_txt)
+                ' Clean the file_text variable for the next section
+                file_txt = ""
                 k = k + 1
                 
             End If
             
             If k = 0 Then
             
+                ' Exception for first file (abstract)
                 file = path & "abstract.tex"
-                file_txt = ""
                 txt = "\section*{\centering{" & para & "}}"
                 
             Else:
             
+                ' All other files will be saved with its section number
                 file = path & "sec" & CStr(k) & ".tex"
-                file_txt = ""
                 txt = "\section{" & para & "} \label{" & label_format(para) & "}"
                 
             End If
@@ -57,6 +60,7 @@ For i = 1 To ActiveDocument.Paragraphs.Count
         
             txt = para
             
+            ' Check if carriage return characters after the paragraph are required
             If i < ActiveDocument.Paragraphs.Count Then
             
                 If ActiveDocument.Paragraphs(i + 1).Style = "Standard" _
@@ -71,26 +75,32 @@ For i = 1 To ActiveDocument.Paragraphs.Count
             End If
             
         Case "Titel":
+        
+            ' Ignore all passages formatted as a title
             
         Case "Listenabsatz":
         
             If ActiveDocument.Paragraphs(i - 1).Style <> "Listenabsatz" Then
-            
+                
+                ' If it's the first item in itemize, first add an opening bracket
                 txt = "\begin{itemize}" & Chr(13)
                 
             End If
             
+            ' Add the item
             txt = txt & "\item " & text_format(ranActRange.ListParagraphs(1).Range.text)
             
             If ActiveDocument.Paragraphs(i - 1).Style = "Listenabsatz" _
             And ActiveDocument.Paragraphs(i + 1).Style <> "Listenabsatz" Then
             
+                ' If it's the last item in itemize, finally close the bracket
                 txt = txt & "\end{itemize}"
                 
             End If
             
         Case Else
         
+            ' If there is another paragraph with unknown format, return an error and exit
             MsgBox ("Fehler: Nicht erkanntes Format eines Absatzes (" & ActiveDocument.Paragraphs(i).Style & ")")
             Exit Sub
             
@@ -100,10 +110,12 @@ For i = 1 To ActiveDocument.Paragraphs.Count
     
         If file_txt <> "" Then
         
+            ' If file_txt is not empty anymore, append the paragraph separated by a carriage return
             file_txt = file_txt & Chr(13) & txt
             
         Else:
         
+            ' Else it's the first line in the file and no carriage return is required
             file_txt = txt
             
         End If
@@ -112,6 +124,7 @@ For i = 1 To ActiveDocument.Paragraphs.Count
     
 Next
 
+' Save the last file_txt if the parsing of the word is finished
 Call save_file(file, file_txt)
 
 MsgBox ("Das Dokument wurde ohne Fehler übersetzt (Laufzeit: " & CStr(DateDiff("s", begin, Now)) & " Sekunden).")
