@@ -41,12 +41,15 @@ import Util.pandashelper
 ## Built With
 
 * [Visual Studio 2017](https://visualstudio.microsoft.com/de/downloads/) - The IDE used for Python related code
-* [Anaconda](https://www.anaconda.com/download/) - Management of virtual environments, especially to install pandas
-* [pandas](https://pandas.pydata.org/) - Used package for data science stuff
-* [NumPy](http://www.numpy.org/) - Used package for numeric and stochastic operations
+* [RStudio](https://www.rstudio.com/products/rstudio/download/) - The IDE used for R related code
+* [Anaconda](https://www.anaconda.com/download/) - Management of virtual environments, especially to install the pandas package cleanly
+* [pandas](https://pandas.pydata.org/) - Package used for data science stuff
+* [NumPy](http://www.numpy.org/) - Package used for numeric and stochastic operations
+* [Visual Basic for Applications 7.1](https://www.microsoft.com/en-us/download/details.aspx?id=21028) - Language used for converting .docx to .tex files with setting the format automatically
+* [TeX Live 2018](https://www.tug.org/texlive/acquire-netinstall.html) - Tex ressources used for compiling the thesis finally
 
 ## Authors
 
-* **M. Piechocki** - *Initial work* - [piechocki](https://github.com/piechocki)
+* **M. Piechocki** - *Author of the thesis and of all files in this repository* - [piechocki](https://github.com/piechocki)
 
 See the list of [contributors](https://github.com/piechocki/InvarianceHypothesis/contributors) who participated in this project.
