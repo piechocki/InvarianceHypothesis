@@ -332,16 +332,30 @@ def concat_dfs(df1, df2):
 # converters = {'Price': n, 'Volume': n, 'Time[G]': d, 'Bid Price': n,
 #               'Bid Size': n, 'Ask Price': n, 'Ask Size': n}
 
-def get_distribution(df, seconds, date):
+def get_distribution(df, seconds):
+
+    grouped = df.groupby("Date[G]")
+    days = list(grouped.groups.keys())
+    distributions = pd.Series([])
+    for day in days:
+        distributions = distributions.add(get_distribution_per_day(df, seconds, day), fill_value=0)
+    return distributions
+
+
+def get_distribution_per_day(df, seconds, date):
 
     df = df[df["Date[G]"] == date]
+    # first add day difference between 01.01.1900 (date of field Time[G]) and
+    # 01.01.1970 (default origin of to_timedelta function) to the time field
+    # field to get the time difference in time only (without difference in
+    # days)
     df["Time[G]_today"] = df["Time[G]"] + pd.Timedelta("25567 days")
     df["groupby_intervall"] = pd.to_timedelta(df["Time[G]_today"])
     df["groupby_intervall"] = (
         df["groupby_intervall"].dt.total_seconds().astype(int))
     df["groupby_intervall"] = (
         df["groupby_intervall"] / seconds).apply(np.floor)
-
+    s
     opening = df["Time[G]"].iloc[0]
     closing = df["Time[G]"].iloc[-1]
     day_open = pd.Timestamp(

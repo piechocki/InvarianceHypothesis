@@ -24,6 +24,7 @@ class PreProcessor:
         self.rows = {}
         self.aggregations_trades = pandashelper.get_empty_aggregation_trades()
         self.aggregations_quotes = pandashelper.get_empty_aggregation_quotes()
+        self.distribution = pandashelper.pd.Series([])
 
     def init_rows_per_date(self):
 
@@ -119,8 +120,11 @@ class PreProcessor:
 
     def init_aggregation(self, df_trades, df_quotes):
 
-        # distribution = pandashelper.get_distribution(
-        #    df_trades, 60, df_trades["Date[G]"].iloc[0])
+        # distribution doesn't make sense if input dataframe contains more
+        # than one stock
+        self.distribution = self.distribution.add(
+            pandashelper.get_distribution(df_trades, 60), fill_value=0)
+            #, df_trades["Date[G]"].iloc[0])
         aggregation_trades = pandashelper.get_new_aggregation_trades(
             df_trades)
         aggregation_quotes = pandashelper.get_new_aggregation_quotes(
@@ -156,6 +160,9 @@ class PreProcessor:
             self.marketplace + " Trades.csv", index=False)
         self.aggregations_quotes.to_csv(
             self.marketplace + " Quotes.csv", index=False)
+        if not self.distribution.empty:
+            self.distribution.to_csv(
+                self.marketplace + " Verteilung.csv")
 
     def get_marketplace(self):
 
