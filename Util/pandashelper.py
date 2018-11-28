@@ -355,7 +355,7 @@ def get_distribution_per_day(df, seconds, date):
         df["groupby_intervall"].dt.total_seconds().astype(int))
     df["groupby_intervall"] = (
         df["groupby_intervall"] / seconds).apply(np.floor)
-    s
+    
     opening = df["Time[G]"].iloc[0]
     closing = df["Time[G]"].iloc[-1]
     day_open = pd.Timestamp(
