@@ -97,7 +97,7 @@ class PreProcessor:
     def init_aggregations(self):
 
         print("Getting aggregations per ticker and day ...")
-        for i in range(1):  # range(len(self.rows)):
+        for i in range(len(self.rows)):
             ticker = list(self.rows)[i]
             source = self.get_source_by_ticker(ticker)
             count_rows = self.rows[ticker][list(self.rows[ticker].keys())[-1]]
@@ -122,9 +122,9 @@ class PreProcessor:
 
         # distribution doesn't make sense if input dataframe contains more
         # than one stock
-        self.distribution = self.distribution.add(
-            pandashelper.get_distribution(df_trades, 60), fill_value=0)
-            #, df_trades["Date[G]"].iloc[0])
+        #self.distribution = self.distribution.add(
+        #    pandashelper.get_distribution(df_trades, 60), fill_value=0)
+        #    #, df_trades["Date[G]"].iloc[0])
         aggregation_trades = pandashelper.get_new_aggregation_trades(
             df_trades)
         aggregation_quotes = pandashelper.get_new_aggregation_quotes(
