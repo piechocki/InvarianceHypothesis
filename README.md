@@ -1,6 +1,6 @@
 # InvarianceHypothesis
 
-This project contains several tools for analyzing trade and quote datasets from the Thomson Reuters Tick History (TRTH) as used in my master thesis with the title "Marktmikrostruktur-Invarianz: Eine empirische Analyse europäischer Aktien".
+This project contains several tools for analyzing trade and quote datasets from the Thomson Reuters Tick History (TRTH) as used in my master thesis with the title "Market Microstructure Invariance: An empirical analysis of European stocks" (original title in German: "Marktmikrostruktur-Invarianz: Eine empirische Analyse europäischer Aktien").
 
 ## Getting Started
 
@@ -22,7 +22,7 @@ The main entry point is the file program.py. If you configure your interpreter t
 
 ### Modules
 
-Apart from the initialization of the program in program.py, all functions and methods are outsourced in further modules:
+Apart from the instantiationg of the program in program.py, all functions and methods are outsourced in further modules:
 
 * preprocessing (in the folder ./Common) containing all "spanning" functions that are implemented with standard python basically
 * pandashelper (in the folder ./Util) containing all direct data operations, implemented with specific data science functions from pandas mainly and numpy in part
@@ -47,6 +47,7 @@ import Util.pandashelper
 * [NumPy](http://www.numpy.org/) - Package used for numeric and stochastic operations
 * [Visual Basic for Applications 7.1](https://www.microsoft.com/en-us/download/details.aspx?id=21028) - Language used for converting .docx to .tex files with setting the format automatically
 * [TeX Live 2018](https://www.tug.org/texlive/acquire-netinstall.html) - Tex ressources used for compiling the thesis finally
+* [Styles2Tex](https://github.com/piechocki/Styles2Tex) - Word Add-in to translate a docx file into tex compatible code
 
 ## Authors
 
