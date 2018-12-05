@@ -45,7 +45,6 @@ import Util.pandashelper
 * [Anaconda](https://www.anaconda.com/download/) - Management of virtual environments, especially to install the pandas package cleanly
 * [pandas](https://pandas.pydata.org/) - Package used for data science stuff
 * [NumPy](http://www.numpy.org/) - Package used for numeric and stochastic operations
-* [Visual Basic for Applications 7.1](https://www.microsoft.com/en-us/download/details.aspx?id=21028) - Language used for converting .docx to .tex files with setting the format automatically
 * [TeX Live 2018](https://www.tug.org/texlive/acquire-netinstall.html) - Tex ressources used for compiling the thesis finally
 * [Styles2Tex](https://github.com/piechocki/Styles2Tex) - Word Add-in to translate a docx file into tex compatible code
 
