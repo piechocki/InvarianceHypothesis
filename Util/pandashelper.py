@@ -147,23 +147,26 @@ def get_dataframe_with_shifted_column(df, col_to_shift, new_col_name,
 
 def get_new_aggregation_quotes(df):
 
+    # get shifted time column to calculate the time delta 
     df = get_dataframe_with_shifted_column(df, "Time[G]", "Time[G]+1")
     df["Time delta"] = (df["Time[G]+1"] - df["Time[G]"]).astype(
         'timedelta64[ms]')
 
+    # fillup all prices and sizes with the last value before
     df["Bid Price"] = df["Bid Price"].fillna(method="ffill")
     df["Bid Size"] = df["Bid Size"].fillna(method="ffill")
     df["Ask Price"] = df["Ask Price"].fillna(method="ffill")
     df["Ask Size"] = df["Ask Size"].fillna(method="ffill")
 
-    # drop all rows that still have zero values for price or
-    # size after padding above
+    # drop all rows that still have at least one zero value
+    # for price or size after padding above
     valid_quotes = df.index[(df["Bid Price"] > 0) &
                             (df["Bid Size"] > 0) &
                             (df["Ask Price"] > 0) &
                             (df["Ask Size"] > 0)].tolist()
     df = df.loc[valid_quotes, :]
     
+    # calculate auxiliary columns
     df["Absolute spread"] = df["Ask Price"] - df["Bid Price"]
     df["Mid quote"] = (df["Ask Price"] + df["Bid Price"]) / 2
     df["Relative spread"] = df["Absolute spread"] / df["Mid quote"] * 10000
@@ -188,6 +191,8 @@ def get_new_aggregation_quotes(df):
          "Time[G]": [],
          "Log midpoint": []})
 
+    # calculate a dataframe that contains a timestamp every "even" 10 seconds
+    # within the period of trading hours for each day
     for day in days:
         day_open = pd.Timestamp(
             year=1900,
@@ -219,6 +224,8 @@ def get_new_aggregation_quotes(df):
     time_all = time_all.sort_values(["Date[G]", "Time[G]"])
     realised_stderr = []
 
+    # calculate the interpolated log midpoint for all timestamps in time_all
+    # to get the standard error for every day finally and append it to a list
     for day in days:
         # save all midpoints of one day in a new series inclusive all even
         # timestamps with null values
@@ -281,6 +288,7 @@ def get_new_aggregation_quotes(df):
 
 
 def get_new_aggregation_trades(df):
+
 
     df = get_dataframe_with_shifted_column(df, "Price", "Price-1",
                                            forward=False)

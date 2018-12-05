@@ -13,8 +13,10 @@ class PreProcessor:
 
         self.input_folder = input_folder if input_folder[-1:] == \
             "/" else input_folder + "/"
-        self.marketplace = self.get_marketplace() if additional_filter == \
-            "" else self.get_marketplace() + " " + additional_filter[1:3]
+        self.marketplace = self.get_marketplace() + (
+            "" if additional_filter == "" else (
+            " " + additional_filter.replace(
+            "_", "").replace(".", "")))
         self.files = []
         self.bod = pandashelper.pd.Timestamp("1900-01-01 09:00:00.000")
         self.eod = pandashelper.pd.Timestamp("1900-01-01 16:30:00.000")
