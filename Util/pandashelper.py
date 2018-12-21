@@ -1,9 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+"""
+The pandashelper module provides more technical functions for aggregation of
+TRTH datasets, especially for all operations that require pandas or numpy.
+
+The pandas and numpy packages must be installed to use this module.
+"""
+
 import pandas as pd
 import numpy as np
 import math
 
+# define global settings for csv reader
 names = ['#RIC', 'Date[G]', 'Time[G]', 'GMT Offset', 'Type',
          'Ex/Cntrb.ID', 'Price', 'Volume', 'Bid Price',
          'Bid Size', 'Ask Price', 'Ask Size', 'Qualifiers']
@@ -17,39 +25,82 @@ engine = "c"
 converters = None
 
 
-def f(x): return np.NaN if x == "" else float(x)
+def f(x):
+    """
+    Auxiliary function to convert a given value into type float.
+    """
+    return np.NaN if x == "" else float(x)
 
 
-def i(x): return np.NaN if x == "" else int(x)
+def i(x):
+    """
+    Auxiliary function to convert a given value into type integer.
+    """
+    return np.NaN if x == "" else int(x)
 
 
-def n(x): return pd.to_numeric(x, errors='coerce')
+def n(x):    
+    """
+    Auxiliary function to convert a given value into type numeric.
+    """
+    return pd.to_numeric(x, errors='coerce')
 
 
-def d(x): return pd.to_datetime(x, format="%H:%M:%S.%f")
+def d(x):
+    """
+    Auxiliary function to convert a given value into type datetime.
+    """
+    return pd.to_datetime(x, format="%H:%M:%S.%f")
 
 
-def round_seconds_up(
-    x, seconds=10, in_range=False): return 0 if int(
-        math.ceil(
-            x / float(seconds))) * seconds == 60 and in_range else int(
-                math.ceil(
-                    x / float(seconds))) * seconds
+# a further setting for csv reader that is used no longer (conversion is to
+# slow for large input files. the type conversion that are done in the
+# get_filtered_dataframes() function in the preprocessor class is much more
+# efficient.
+# converters = {'Price': n, 'Volume': n, 'Time[G]': d, 'Bid Price': n,
+#               'Bid Size': n, 'Ask Price': n, 'Ask Size': n}
+
+def round_seconds_up(x, seconds=10, in_range=False):
+    """
+    Function rounds up a given number of seconds. By default the number will be
+    rounded up to the next even 10 seconds. If the in_range parameter is set to
+    True the return value is between 0 and 59 (that is the condition for the 
+    seconds parameter of Timestamp() function). Counterpart to
+    round_seconds_down() function.
+    """
+    return 0 if int(
+        math.ceil(x / float(seconds))) * seconds == 60 and in_range else int(
+        math.ceil(x / float(seconds))) * seconds
 
 
-def round_seconds_down(x, seconds=10): return x - x % seconds
+def round_seconds_down(x, seconds=10):
+    """
+    Function rounds down a given number of seconds. By default the number will
+    be rounded down to the next even 10 seconds. Counterpart to
+    round_seconds_up() function.
+    """
+    return x - x % seconds
 
 
-def round_time(x): return pd.Timestamp(year=1900,
-                                       month=1,
-                                       day=1,
-                                       hour=x.hour,
-                                       minute=x.minute,
-                                       second=round_seconds_down(x.second))
+def round_time(x):
+    """
+    Function returns a pandas timestamp with the time that is given as
+    parameter. The seconds of the timestamp will be rounded down.
+    """
+    return pd.Timestamp(year=1900,
+                        month=1,
+                        day=1,
+                        hour=x.hour,
+                        minute=x.minute,
+                        second=round_seconds_down(x.second))
 
 
 def get_dates_with_first_row(source):
-
+    """
+    For a given source file the function returns all row numbers of the
+    respective first occurance of each date in the raw data. The return
+    value is dictionary with dates as keys and row numbers as values.
+    """
     chunksize = 5000
     reader = pd.read_csv(source, iterator=True, engine="c", low_memory=False,
                          chunksize=chunksize, header=0, compression="gzip",
@@ -67,7 +118,10 @@ def get_dates_with_first_row(source):
 
 
 def get_dataframe_by_rows(source, first_row, last_row):
-
+    """
+    Function queries a specific range of a given source file and returns the
+    range as a dataframe.
+    """
     skiprows = first_row + 1
     nrows = (last_row - first_row + 1) if last_row > 0 else None
     return pd.read_csv(source, engine="c", header=None, compression="gzip",
@@ -77,7 +131,11 @@ def get_dataframe_by_rows(source, first_row, last_row):
 
 
 def get_dataframe_by_iter(source, iteration):
-
+    """
+    Function queries the part of a given source file that results from the
+    iteration counter (together with the set limit for rows per iteration).
+    The range is returned as a dataframe.
+    """
     skiprows = iteration * rows_limit_per_iter + 1
     nrows = rows_limit_per_iter
     return pd.read_csv(source, engine="c", header=None, compression="gzip",
@@ -87,7 +145,10 @@ def get_dataframe_by_iter(source, iteration):
 
 
 def get_dataframe_by_chunks(source):
-
+    """
+    Function reads the whole source file with the build-in chunk iterator.
+    The source file is returned as a dataframe.
+    """
     return pd.read_csv(source, engine="c", iterator=True,
                        chunksize=rows_limit_per_iter, header=None,
                        skiprows=1, compression="gzip", na_filter=False,
@@ -96,7 +157,10 @@ def get_dataframe_by_chunks(source):
 
 
 def get_empty_aggregation_trades():
-
+    """
+    Returns an empty dataframe with predefined columns that are required for
+    the aggregation of trades.
+    """
     return pd.DataFrame({
         'ticker': [],
         'date': [],
@@ -114,7 +178,10 @@ def get_empty_aggregation_trades():
 
 
 def get_empty_aggregation_quotes():
-
+    """
+    Returns an empty dataframe with predefined columns that are required for
+    the aggregation of quotes.
+    """
     return pd.DataFrame({
         'ticker': [],
         'date': [],
@@ -132,7 +199,15 @@ def get_empty_aggregation_quotes():
 
 def get_dataframe_with_shifted_column(df, col_to_shift, new_col_name,
                                       forward=True, drop_bod_eod_value=True):
-
+    """
+    Function manipulates a given dataframe while it adds a new column that
+    corresponds to an existing column with a given name. All values of this
+    column will be shifted up or down by one row. The name of the new column
+    must be given as well. If drop_bod_eod_value is set to True all values
+    that are shifted from a record with different date will be set dropped
+    (set to Null). This functionality prevents jumps within the values between
+    two days.
+    """
     df[new_col_name] = df[col_to_shift].shift(-1 if forward else 1)
     if drop_bod_eod_value:
         if forward:
@@ -141,12 +216,16 @@ def get_dataframe_with_shifted_column(df, col_to_shift, new_col_name,
             bod_eod = df.groupby("Date[G]").head(1).index.tolist()
         for row in bod_eod:
             df.at[row, new_col_name] = np.NaN
-
     return df
 
 
 def get_new_aggregation_quotes(df):
-
+    """
+    Calculate the actual aggregation for a dataframe with quotes. The resulting
+    dataframe has the same structure as the get_empty_aggregation_quotes()
+    function returns. The number of rows correlates to the number of distinct
+    dates that are included in the input dataframe.
+    """
     # get shifted time column to calculate the time delta 
     df = get_dataframe_with_shifted_column(df, "Time[G]", "Time[G]+1")
     df["Time delta"] = (df["Time[G]+1"] - df["Time[G]"]).astype(
@@ -288,8 +367,12 @@ def get_new_aggregation_quotes(df):
 
 
 def get_new_aggregation_trades(df):
-
-
+    """
+    Calculate the actual aggregation for a dataframe with trades. The resulting
+    dataframe has the same structure as the get_empty_aggregation_trades()
+    function returns. The number of rows correlates to the number of distinct
+    dates that are included in the input dataframe.
+    """
     df = get_dataframe_with_shifted_column(df, "Price", "Price-1",
                                            forward=False)
     df = get_dataframe_with_shifted_column(df, "Time[G]", "Time[G]+1")
@@ -333,25 +416,43 @@ def get_new_aggregation_trades(df):
 
 
 def concat_dfs(df1, df2):
-
+    """
+    Concatenate two given dataframes to one.
+    """
     return pd.concat([df1, df2])
 
 
-# converters = {'Price': n, 'Volume': n, 'Time[G]': d, 'Bid Price': n,
-#               'Bid Size': n, 'Ask Price': n, 'Ask Size': n}
-
 def get_distribution(df, seconds):
-
+    """
+    Function iterates through all days included in the given dataframe and
+    calls the function that calculates the distribution for a specific day.
+    The return value is a pandas series in which the index correlates with the
+    number of events in the interval of the given number of seconds. The value
+    corresponds to the occurances of intervals with exact this number of
+    events. The series contains all aggregated distributions of all days wihtin
+    the given dataframe.
+    """
     grouped = df.groupby("Date[G]")
     days = list(grouped.groups.keys())
     distributions = pd.Series([])
     for day in days:
-        distributions = distributions.add(get_distribution_per_day(df, seconds, day), fill_value=0)
+        # the pandas.Series.add() function with fill_value of 0 sums up the
+        # value of the added series with the value of the same index of the
+        # existing series (if this index exists already)
+        distributions = distributions.add(
+            get_distribution_per_day(df, seconds, day), fill_value=0)
     return distributions
 
 
 def get_distribution_per_day(df, seconds, date):
-
+    """
+    Function calculates the distribution of events within the given dataframe
+    and on a given day. The length of the interval in which the events are
+    counted can be set with the seconds parameter. The returning value is a
+    pandas series in which the index correlates with the number of events in
+    the interval of the given number of seconds. The value corresponds to the
+    occurances of intervals with exact this number of events.
+    """
     df = df[df["Date[G]"] == date]
     # first add day difference between 01.01.1900 (date of field Time[G]) and
     # 01.01.1970 (default origin of to_timedelta function) to the time field
@@ -418,5 +519,8 @@ def get_distribution_per_day(df, seconds, date):
 
 
 def convert_column_to_numeric(df, col_name):
-
+    """
+    Method to convert a dataframe column with a given name into a column of
+    numeric type (inplace).
+    """
     df.loc[:, col_name] = pd.to_numeric(df[col_name], errors="coerce")
