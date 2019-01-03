@@ -34,6 +34,10 @@ class PreProcessor:
         self.files = []
         self.bod = pandashelper.pd.Timestamp("1900-01-01 09:00:00.000")
         self.eod = pandashelper.pd.Timestamp("1900-01-01 16:30:00.000")
+        self.exluded_tickers = ['FTIp.BS','FTIp.CHI','FTIp.TQ','TECp.BS',
+                                'TECp.CHI','TECp.TQ','VLOF.PA','VNAd.BS',
+                                'VNAd.CHI','VNAd.TQ','VNAn.DE','FRp.BS',
+                                'FRp.CHI','FRp.TQ','FRTp.BS','FTI.PA']
         for file in os.listdir(self.input_folder):
             if file.endswith(".csv.gz") and additional_filter in file:
                 self.files.append(file)
@@ -146,8 +150,14 @@ class PreProcessor:
         one day at once.
         """
         print("Getting aggregations per ticker and day ...")
+        nrow_trades = 0
+        nrow_quotes = 0
         for i in range(len(self.rows)):
             ticker = list(self.rows)[i]
+            # skip tickers that has been excluded from the sample
+            if ticker in self.exluded_tickers:
+                print("Ticker " + ticker + " is skipped.")
+                continue
             source = self.get_source_by_ticker(ticker)
             count_rows = self.rows[ticker][list(self.rows[ticker].keys())[-1]]
             max_iter = math.ceil(count_rows /
@@ -165,7 +175,14 @@ class PreProcessor:
                         df, ticker, last_tail_length)
                 df_trades, df_quotes = self.get_filtered_dataframes(df)
                 self.init_aggregation(df_trades, df_quotes)
+                nrow_trades += len(df_trades.index)
+                nrow_quotes += len(df_quotes.index)
                 j += 1
+        # optional: print the number of data that has been processed for the
+        # aggregation each for trades and quotes
+        # print(self.marketplace)
+        # print(nrow_trades)
+        # print(nrow_quotes)
 
     def init_aggregation(self, df_trades, df_quotes):
         """

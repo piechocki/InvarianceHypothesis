@@ -18,7 +18,8 @@ names = ['#RIC', 'Date[G]', 'Time[G]', 'GMT Offset', 'Type',
 chunk_size = 20000
 header = 0
 compression = "gzip"
-rows_limit_per_iter = 10000000
+rows_limit_per_iter = 2000000 # best settings are depenend on your RAM
+                              # recommended: 2 mio. for 8GB, 10 mio. for 16GB
 na_filter = False
 low_memory = True
 engine = "c"
