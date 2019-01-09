@@ -150,8 +150,6 @@ class PreProcessor:
         one day at once.
         """
         print("Getting aggregations per ticker and day ...")
-        nrow_trades = 0
-        nrow_quotes = 0
         for i in range(len(self.rows)):
             ticker = list(self.rows)[i]
             # skip tickers that has been excluded from the sample
@@ -175,14 +173,7 @@ class PreProcessor:
                         df, ticker, last_tail_length)
                 df_trades, df_quotes = self.get_filtered_dataframes(df)
                 self.init_aggregation(df_trades, df_quotes)
-                nrow_trades += len(df_trades.index)
-                nrow_quotes += len(df_quotes.index)
                 j += 1
-        # optional: print the number of data that has been processed for the
-        # aggregation each for trades and quotes
-        # print(self.marketplace)
-        # print(nrow_trades)
-        # print(nrow_quotes)
 
     def init_aggregation(self, df_trades, df_quotes):
         """
