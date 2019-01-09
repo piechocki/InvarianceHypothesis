@@ -18,9 +18,9 @@ following five steps:
  - aggregate the raw data (and get the distribution of data optionally)
  - save these aggregations to a csv file
 
-(*) while these steps are done only once typically, the following three steps can
-be iterated more quickly if the row numbers are accessible by a file easily,
-but you can iterate all five steps in a row of course
+(*) while these steps are done only once typically, the following three steps
+can be iterated more quickly if the row numbers are accessible by a file
+easily, but you can iterate all five steps in a row of course
 """
 
 import Common.preprocessing as preprocessing
