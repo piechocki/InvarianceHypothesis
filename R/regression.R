@@ -23,7 +23,10 @@ container <- data.frame(symbol=character(), month=character(), V=double(),
                         sigma=double(), W=double(), N=double(), X=double(),
                         P=double())
 coefficient <- data.frame(symbol=character(), model=character(), mu=double(),
-                          a=double())
+                          a=double(), p=double(), r_squared=double(),
+                          r_adjusted=double(), symbol_rm=character(),
+                          index=character(), venue=character(),
+                          market=character())
 
 # get list of corresponding csv files
 trade_files <- list.files(path = "./Aggregationen", pattern="*Trades.csv$")
@@ -77,8 +80,9 @@ container$stock_upper <- lapply(container$stock, function(v) {
 # ("Primary" for Regulated Market or else "MTF")
 container$venue <- do.call(rbind, strsplit(as.character(container$ticker), '.',
                                            fixed = TRUE))[,2]
-container$market <- ifelse(container$venue == "DE" | container$venue == "PA" |
-                             container$venue == "AS" | container$venue == "BR",
+container$venue <- ifelse(container$venue == "AS" | container$venue == "BR",
+                          "PA", container$venue)
+container$market <- ifelse(container$venue == "DE" | container$venue == "PA",
                            "Primary", "MTF")
 
 # get a list with the tickers with members of the dax and cac
@@ -94,6 +98,18 @@ container$index <- ifelse(container$stock %in% dax_ticker |
                                    container$stock_upper %in% cac_ticker,
                                  "CAC",
                                  NA))
+
+# ------------------------------------------------------------------------------
+# leave this part out commented for analyses of the whole series (i.e. no time
+# frame analysis). otherwise activate timeframe 1 OR timeframe 2 temporary
+# (only one row should be executed for a useful calculation):
+# timeframe 1
+#container <- container[(container$date<20161000 & container$index=="CAC") |
+#                       (container$date<=20160615 & container$index=="DAX"),]
+# timeframe 2
+#container <- container[(container$date>20161000 & container$index=="CAC") |
+#                       (container$date>20160615 & container$index=="DAX"),]
+# ------------------------------------------------------------------------------
 
 # load the market caps from file and define a boolean variable "large_cap" that
 # is TRUE for all market caps higher than the average
@@ -168,8 +184,9 @@ plot(log(sample$W/W_star), log(sample$rel_spread),
 abline(model_rel_spread)
 
 # do the regression now for every combination of symbol and venue
-# get a list with all unique tickers
-rics <- as.list(levels(unique(container$ticker)))
+# therefore get a list with all unique tickers
+rics <- as.character(levels(container$ticker)[as.integer(container$ticker)])
+rics <- unique(rics)
 
 # loop through all tickers
 for (i in 1:length(rics)) {
@@ -191,24 +208,136 @@ for (i in 1:length(rics)) {
   model_rel_spread <- lm(log(rel_spread) ~ log(W/W_star),
                          data = sample)
     
-  # save data in a temporary container
-  container_temp <- data.frame(r=ric,
-                             m=c("trade_freq", "quote_freq", "trade_vol",
-                                 "quote_vol", "abs_spread", "rel_spread"),
-                             c1=c(as.numeric(model_trade_freq$coefficients[1]),
-                                  as.numeric(model_quote_freq$coefficients[1]),
-                                  as.numeric(model_trade_vol$coefficients[1]),
-                                  as.numeric(model_quote_vol$coefficients[1]),
-                                  as.numeric(model_abs_spread$coefficients[1]),
-                                  as.numeric(model_rel_spread$coefficients[1])),
-                             c2=c(as.numeric(model_trade_freq$coefficients[2]),
-                                  as.numeric(model_quote_freq$coefficients[2]),
-                                  as.numeric(model_trade_vol$coefficients[2]),
-                                  as.numeric(model_quote_vol$coefficients[2]),
-                                  as.numeric(model_abs_spread$coefficients[2]),
-                                  as.numeric(model_rel_spread$coefficients[2])))
+  # save desired data of each regression in a temporary container
+  container_temp <- data.frame(
+    r=ric,
+    m=c("trade_freq",
+        "quote_freq",
+        "trade_vol",
+        "quote_vol",
+        "abs_spread",
+        "rel_spread"),
+    c1=c(as.numeric(model_trade_freq$coefficients[1]),
+         as.numeric(model_quote_freq$coefficients[1]),
+         as.numeric(model_trade_vol$coefficients[1]),
+         as.numeric(model_quote_vol$coefficients[1]),
+         as.numeric(model_abs_spread$coefficients[1]),
+         as.numeric(model_rel_spread$coefficients[1])),
+    c2=c(as.numeric(model_trade_freq$coefficients[2]),
+         as.numeric(model_quote_freq$coefficients[2]),
+         as.numeric(model_trade_vol$coefficients[2]),
+         as.numeric(model_quote_vol$coefficients[2]),
+         as.numeric(model_abs_spread$coefficients[2]),
+         as.numeric(model_rel_spread$coefficients[2])),
+    p=c(as.numeric(summary(model_trade_freq)$coefficients[2,"Pr(>|t|)"]),
+        as.numeric(summary(model_quote_freq)$coefficients[2,"Pr(>|t|)"]),
+        as.numeric(summary(model_trade_vol)$coefficients[2,"Pr(>|t|)"]),
+        as.numeric(summary(model_quote_vol)$coefficients[2,"Pr(>|t|)"]),
+        as.numeric(summary(model_abs_spread)$coefficients[2,"Pr(>|t|)"]),
+        as.numeric(summary(model_rel_spread)$coefficients[2,"Pr(>|t|)"])),
+    r_s=c(as.numeric(summary(model_trade_freq)$r.squared),
+          as.numeric(summary(model_quote_freq)$r.squared),
+          as.numeric(summary(model_trade_vol)$r.squared),
+          as.numeric(summary(model_quote_vol)$r.squared),
+          as.numeric(summary(model_abs_spread)$r.squared),
+          as.numeric(summary(model_rel_spread)$r.squared)),
+    r_a=c(as.numeric(summary(model_trade_freq)$adj.r.squared),
+          as.numeric(summary(model_quote_freq)$adj.r.squared),
+          as.numeric(summary(model_trade_vol)$adj.r.squared),
+          as.numeric(summary(model_quote_vol)$adj.r.squared),
+          as.numeric(summary(model_abs_spread)$adj.r.squared),
+          as.numeric(summary(model_rel_spread)$adj.r.squared)),
+    symbol_rm=sample$ticker_rm[1],
+    index=sample$index[1],
+    venue=sample$venue[1],
+    market=sample$market[1])
+  
+  # rename temporary dataframe for merging
   names(container_temp) <- names(coefficient)
   
-  # append the temporary container to the result dataframe
+  # append the temporary container to the results dataframe
   coefficient <- rbind(coefficient, container_temp)
 }
+
+# split the data into dax and cac sample
+dax <- coefficient[coefficient$index=="DAX",]
+cac <- coefficient[coefficient$index=="CAC",]
+# take only with those regressions that are significant and get rid of the rest
+dax_p <- coefficient[coefficient$index=="DAX" & coefficient$p <= 0.05,]
+cac_p <- coefficient[coefficient$index=="CAC" & coefficient$p <= 0.05,]
+
+# calculate the means and further indicators for each model and venue
+dax1 <- aggregate(dax$a, list(levels(dax$model)[as.integer(dax$model)],
+                              levels(dax$venue)[as.integer(dax$venue)]),
+                  FUN = function(x) c(mean = mean(x),
+                                      min = min(x),
+                                      max = max(x),
+                                      median = median(x)))
+dax2 <- aggregate(dax_p$a, list(levels(dax_p$model)[as.integer(dax_p$model)],
+                                levels(dax_p$venue)[as.integer(dax_p$venue)]),
+                  FUN = function(x) c(mean = mean(x),
+                                      min = min(x),
+                                      max = max(x),
+                                      median = median(x)))
+dax3 <- aggregate(dax$p, list(levels(dax$model)[as.integer(dax$model)],
+                              levels(dax$venue)[as.integer(dax$venue)]),
+                  FUN = function(x) c(p5 = sum(x<=0.05),
+                                      p1 = sum(x<=0.01),
+                                      n = length(x)))
+dax4 <- aggregate(dax$r_squared, list(levels(dax$model)[as.integer(dax$model)],
+                                      levels(dax$venue)[as.integer(dax$venue)]),
+                  FUN = function(x) c(r_s=mean(x)))
+dax5 <- aggregate(dax$r_adjusted, list(levels(dax$model)[as.integer(dax$model)],
+                                      levels(dax$venue)[as.integer(dax$venue)]),
+                  FUN = function(x) c(r_a=mean(x)))
+# rename these dataframes to know the several content of each column, especially
+# after the merging of all columns
+names(dax4) <- c("Group.1","Group.2","r_squared")
+names(dax5) <- c("Group.1","Group.2","r_adjusted")
+
+# do the same for cac data
+cac1 <- aggregate(cac$a, list(levels(cac$model)[as.integer(cac$model)],
+                              levels(cac$venue)[as.integer(cac$venue)]),
+                  FUN = function(x) c(mean = mean(x),
+                                      min = min(x),
+                                      max = max(x),
+                                      median = median(x)))
+cac2 <- aggregate(cac_p$a, list(levels(cac_p$model)[as.integer(cac_p$model)],
+                                levels(cac_p$venue)[as.integer(cac_p$venue)]),
+                  FUN = function(x) c(mean = mean(x),
+                                      min = min(x),
+                                      max = max(x),
+                                      median = median(x)))
+cac3 <- aggregate(cac$p, list(levels(cac$model)[as.integer(cac$model)],
+                              levels(cac$venue)[as.integer(cac$venue)]),
+                  FUN = function(x) c(p5 = sum(x<=0.05),
+                                      p1 = sum(x<=0.01),
+                                      n = length(x)))
+cac4 <- aggregate(cac$r_squared, list(levels(cac$model)[as.integer(cac$model)],
+                                      levels(cac$venue)[as.integer(cac$venue)]),
+                  FUN = function(x) c(r_s=mean(x)))
+cac5 <- aggregate(cac$r_adjusted, list(levels(cac$model)[as.integer(cac$model)],
+                                      levels(cac$venue)[as.integer(cac$venue)]),
+                  FUN = function(x) c(r_a=mean(x)))
+names(cac4) <- c("Group.1","Group.2","r_squared")
+names(cac5) <- c("Group.1","Group.2","r_adjusted")
+
+# merge all means and indicators in one dataframe
+dax_csv <- merge(merge(dax1, dax2, by=c("Group.1","Group.2"),
+                       suffixes = c("all","significant")),
+                 dax3, by=c("Group.1","Group.2"))
+dax_csv <- merge(merge(dax_csv, dax4, by=c("Group.1","Group.2")),
+                 dax5, by=c("Group.1","Group.2"))
+# sorting of the result to have a uniform order
+dax_csv <- dax_csv[order(dax_csv$Group.2, dax_csv$Group.1),]
+# save the csv
+write.csv(dax_csv, "./Regression/dax.csv", row.names=FALSE)
+
+# and again do the same stuff for the dataframes of the cac data
+cac_csv <- merge(merge(cac1, cac2, by=c("Group.1","Group.2"),
+                       suffixes = c("all","significant")),
+                 cac3, by=c("Group.1","Group.2"))
+cac_csv <- cac_csv[order(cac_csv$Group.2, cac_csv$Group.1),]
+cac_csv <- merge(merge(cac_csv, cac4, by=c("Group.1","Group.2")),
+                 cac5, by=c("Group.1","Group.2"))
+write.csv(cac_csv, "./Regression/cac.csv", row.names=FALSE)
