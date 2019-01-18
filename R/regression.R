@@ -24,9 +24,9 @@ container <- data.frame(symbol=character(), month=character(), V=double(),
                         P=double())
 coefficient <- data.frame(symbol=character(), model=character(), mu=double(),
                           a=double(), p=double(), r_squared=double(),
-                          r_adjusted=double(), symbol_rm=character(),
-                          index=character(), venue=character(),
-                          market=character())
+                          r_adjusted=double(), a_se=double(), f_test_p=double(),
+                          symbol_rm=character(), index=character(),
+                          venue=character(), market=character())
 
 # get list of corresponding csv files
 trade_files <- list.files(path = "./Aggregationen", pattern="*Trades.csv$")
@@ -137,14 +137,14 @@ for (i in 1:nrow(container)) {
   container$ticker_rm[i] <- as.character.factor(x)
 }
 
-# put the stocks into two groups dependent on the market cap
-a <- container[container$large_cap>mean(market_cap$MARKET.CAPITALIZATION),]
-b <- container[container$large_cap<=mean(market_cap$MARKET.CAPITALIZATION),]
-
-# test whether the mean of volatility and of the traded volume is the equal in 
-# both groups
-t.test(a$sigma_m_log, b$sigma_m_log, var.equal=TRUE)
-t.test(a$V, b$V, var.equal=TRUE)
+# # put the stocks into two groups dependent on the market cap
+# a <- container[container$large_cap>mean(market_cap$MARKET.CAPITALIZATION),]
+# b <- container[container$large_cap<=mean(market_cap$MARKET.CAPITALIZATION),]
+# 
+# # test whether the mean of volatility and of the traded volume is the equal in 
+# # both groups
+# t.test(a$sigma_m_log, b$sigma_m_log, var.equal=TRUE)
+# t.test(a$V, b$V, var.equal=TRUE)
 
 # define a sample (as a subset of container)
 sample <- container #[container$venue=="TQ",]
@@ -247,6 +247,30 @@ for (i in 1:length(rics)) {
           as.numeric(summary(model_quote_vol)$adj.r.squared),
           as.numeric(summary(model_abs_spread)$adj.r.squared),
           as.numeric(summary(model_rel_spread)$adj.r.squared)),
+    a_se=c(as.numeric(summary(model_trade_freq)$coefficients[2,"Std. Error"]),
+           as.numeric(summary(model_quote_freq)$coefficients[2,"Std. Error"]),
+           as.numeric(summary(model_trade_vol)$coefficients[2,"Std. Error"]),
+           as.numeric(summary(model_quote_vol)$coefficients[2,"Std. Error"]),
+           as.numeric(summary(model_abs_spread)$coefficients[2,"Std. Error"]),
+           as.numeric(summary(model_rel_spread)$coefficients[2,"Std. Error"])),
+    f_p=c(as.numeric(pf(summary(model_trade_freq)$fstatistic[1],
+                        summary(model_trade_freq)$fstatistic[2],
+                        summary(model_trade_freq)$fstatistic[3], lower=FALSE)),
+          as.numeric(pf(summary(model_quote_freq)$fstatistic[1],
+                        summary(model_quote_freq)$fstatistic[2],
+                        summary(model_quote_freq)$fstatistic[3], lower=FALSE)),
+          as.numeric(pf(summary(model_trade_vol)$fstatistic[1],
+                        summary(model_trade_vol)$fstatistic[2],
+                        summary(model_trade_vol)$fstatistic[3], lower=FALSE)),
+          as.numeric(pf(summary(model_quote_vol)$fstatistic[1],
+                        summary(model_quote_vol)$fstatistic[2],
+                        summary(model_quote_vol)$fstatistic[3], lower=FALSE)),
+          as.numeric(pf(summary(model_abs_spread)$fstatistic[1],
+                        summary(model_abs_spread)$fstatistic[2],
+                        summary(model_abs_spread)$fstatistic[3], lower=FALSE)),
+          as.numeric(pf(summary(model_rel_spread)$fstatistic[1],
+                        summary(model_rel_spread)$fstatistic[2],
+                        summary(model_rel_spread)$fstatistic[3], lower=FALSE))),
     symbol_rm=sample$ticker_rm[1],
     index=sample$index[1],
     venue=sample$venue[1],
@@ -341,3 +365,6 @@ cac_csv <- cac_csv[order(cac_csv$Group.2, cac_csv$Group.1),]
 cac_csv <- merge(merge(cac_csv, cac4, by=c("Group.1","Group.2")),
                  cac5, by=c("Group.1","Group.2"))
 write.csv(cac_csv, "./Regression/cac.csv", row.names=FALSE)
+
+# finally save the coefficients dataframe for later usage
+write.csv(coefficient, "./Regression/coefficient.csv", row.names=FALSE)
