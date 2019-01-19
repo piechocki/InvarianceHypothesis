@@ -122,7 +122,7 @@ for (m in 1:1) { #length(models)) { #for further models, remove the first hash
 # sort the results and write on disc
 coefficient <- coefficient[order(coefficient$panel, coefficient$index,
                                  coefficient$venue, coefficient$model),]
-write.csv(z_scores, "./Regression/coefficient_panel.csv", row.names=FALSE)
+write.csv(coefficient, "./Regression/coefficient_panel.csv", row.names=FALSE)
 
 
 #-------------------------------------------------------------------------------
