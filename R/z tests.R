@@ -1,5 +1,7 @@
-# this script performs several z-tests, based on the coefficients that are
-# calculated with the script 'regression.r'.
+# this script performs several z-tests (by Paternoster), based on the
+# coefficients that are calculated with the script 'regression.r'.
+# the aim is to test whether the slope coefficient of two different regressions
+# is equal. if so, we have found an invariant parameter.
 
 # clear workspace and define new working directory
 rm(list=ls())

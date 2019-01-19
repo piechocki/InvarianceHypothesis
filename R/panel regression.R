@@ -1,4 +1,4 @@
-# this script performs several again an ols regression, but now with pooled data
+# this script performs an ols regression again, but now with pooled data
 # (aka panel regression). the calculation is based on the container that is
 # built with the script 'regression.r'.
 
