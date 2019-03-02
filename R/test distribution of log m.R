@@ -4,6 +4,7 @@
 
 require(car)
 require(sm)
+require(EnvStats)
 require(tikzDevice)
 
 # clear workspace and define new working directory
@@ -19,10 +20,13 @@ summary(shapiro.test(log_return_midpoint_10_sec$V2))
 sm.density(log_return_midpoint_10_sec$V2, display="se", model="normal")
 shapiro.test(log_return_midpoint_10_sec$V2)
 
+options(OutDec= ",")
 tikz(paste("C:/Users/marti/OneDrive/Documents/OLAT/Master/4. Semester/",
            "Masterarbeit/LaTeX/input/Plots/log_M_distribution.tex", sep=""),
      height=3, width=4)
   par(mar=c(4.1,4.1,0.2,0.2))
-  qqPlot(log_return_midpoint_10_sec$V2, pch = 20, cex = 0.5,
+  qqPlot(log_return_midpoint_10_sec$V2, main = "", line.col = "blue",
+         add.line = TRUE, qq.line.type = "robust", plot.type="Q-Q",
+         distribution = "norm", pch = 20, cex = 0.5,
          xlab = "Quantile der Normalverteilung", ylab = "$\\ln(M)$")
 dev.off()

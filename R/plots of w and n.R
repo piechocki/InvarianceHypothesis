@@ -49,10 +49,16 @@ tikz(paste0("C:/Users/marti/OneDrive/Documents/OLAT/Master/4. Semester/",
   geom_smooth(method = "lm", color=inferno(1, begin = 0.9),   se=FALSE) +
   geom_smooth(span   = 1,    color=viridis(1, begin = 0.7), se=FALSE,
               linetype="dashed") +
-  xlim(c(0, 500000)) +
-  ylim(c(0, 7500)) +
   xlab("$W$") +
-  ylab("$N$")
+  ylab("$N$") +
+  scale_y_continuous(limits = c(0, 7500),
+                     labels=function(x) format(x, big.mark = ".",
+                                               decimal.mark = ",",
+                                               scientific = FALSE)) +
+  scale_x_continuous(limits = c(0, 500000), breaks = c(0,200000,400000),
+                     labels=function(x) format(x, big.mark = ".",
+                                               decimal.mark = ",",
+                                               scientific = FALSE))
 dev.off()
 
 # plot W versus N after transformation (log)
@@ -64,10 +70,16 @@ tikz(paste0("C:/Users/marti/OneDrive/Documents/OLAT/Master/4. Semester/",
   geom_smooth(method = "lm", color=inferno(1, begin = 0.9), se=FALSE) +
   geom_smooth(span   = 1,    color=viridis(1, begin = 0.7), se=FALSE,
               linetype="dashed") +
-  xlim(c(10, 14.5)) +
-  ylim(c(6.5, 9.5)) +
   xlab("$\\ln(W)$") +
-  ylab("$\\ln(N)$")
+  ylab("$\\ln(N)$") +
+  scale_y_continuous(limits = c(6.5, 9.5),
+                     labels=function(x) format(x, big.mark = ".",
+                                               decimal.mark = ",",
+                                               scientific = FALSE)) +
+  scale_x_continuous(limits = c(10, 14.5),
+                     labels=function(x) format(x, big.mark = ".",
+                                               decimal.mark = ",",
+                                               scientific = FALSE))
 dev.off()
 
 # calculate W_star, W over W_star and log of N
@@ -85,10 +97,16 @@ tikz(paste0("C:/Users/marti/OneDrive/Documents/OLAT/Master/4. Semester/",
   geom_smooth(method = "lm", color=inferno(1, begin = 0.9), se=FALSE) +
   geom_smooth(span   = 1,    color=viridis(1, begin = 0.7), se=FALSE,
               linetype="dashed") +
-  xlim(c(0.0000375, 0.0000525)) +
-  ylim(c(7, 9.25)) +
   xlab("$\\ln(\\frac{W}{W_{*}})$") +
-  ylab("$\\ln(N)$")
+  ylab("$\\ln(N)$") +
+  scale_y_continuous(limits = c(7, 9.25),
+                     labels=function(x) format(x, big.mark = ".",
+                                               decimal.mark = ",",
+                                               scientific = FALSE)) +
+  scale_x_continuous(limits = c(0.0000375, 0.0000525),
+                     labels=function(x) format(x, big.mark = ".",
+                                               decimal.mark = ",",
+                                               scientific = FALSE))
 dev.off()
 
 # plot the same relationships as before but with usual plot function (no ggplot)
