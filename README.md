@@ -19,7 +19,9 @@ Of course you can install the packages listed in the requirements.txt file manua
 ## Running the Program
 
 Generally all sources in this repository are separated into the directories ./Python and ./R that contain all the code written in the particular language.
+
 The main entry point in the Python code is the file program.py. If you configure your interpreter to execute this file you are given an instance of the preprocessor class by default. Out of this class you have access to all functionalities implemented in this project.
+
 For running the regressions, plotting results or doing some z-tests you can execute each R-script stand-alone. The purpose of each script is given in the file name and furthermore there is a short description in every header of the scripts. There you can read about specific files you need before you can execute the script without any data issues.
 
 ### Python Modules
