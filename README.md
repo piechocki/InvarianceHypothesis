@@ -1,6 +1,6 @@
 # InvarianceHypothesis
 
-This project contains several tools for analyzing trade and quote datasets from the Thomson Reuters Tick History (TRTH) as used in my master thesis with the title "Market Microstructure Invariance: An empirical analysis of European stocks" (original title in German: "Marktmikrostruktur-Invarianz: Eine empirische Analyse europäischer Aktien").
+This project contains several tools for analyzing trade and quote datasets from the Thomson Reuters Tick History (TRTH) as used in my master thesis with the title “Market Microstructure Invariance: An empirical analysis of European stocks” (original German title: „Marktmikrostruktur-Invarianz: Eine empirische Analyse europäischer Aktien“).
 
 ## Getting Started
 
@@ -8,21 +8,23 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-All required packages are listed in the requirements.txt file. This project is developed and tested with Python version 3.6 only. The specific versions of used packages you can find in the requirements text file as well. The best way is to set up a new virtual environment with Anaconda, then start a command prompt in the location of the environment you've just created and execute the following snippet:
+All required packages are listed in the requirements.txt file (for Python) or in the import section of each script (for the required R packages). This project is developed and tested with Python version 3.6 and R version 3.5.1 only. The best way is to set up a new virtual environment with Anaconda, then start a command prompt in the location of the environment you've just created and execute the following snippet:
 
 ```
 pip install -r requirements.txt
 ```
 
-Of course you can install the packages listed in the .txt file manually via the Anaconda GUI or via the environment configuration menu of your preferred IDE.
+Of course you can install the packages listed in the requirements.txt file manually via the Anaconda GUI or via the environment configuration menu of your preferred IDE.
 
-## Running the program
+## Running the Program
 
-The main entry point is the file program.py. If you configure your interpreter to execute this file you are given an instance of the preprocessor class by default. Out of this class you have access to all functionalities implemented in this project.
+Generally all sources in this repository are separated into the directories ./Python and ./R that contain all the code written in the particular language.
+The main entry point in the Python code is the file program.py. If you configure your interpreter to execute this file you are given an instance of the preprocessor class by default. Out of this class you have access to all functionalities implemented in this project.
+For running the regressions, plotting results or doing some z-tests you can execute each R-script stand-alone. The purpose of each script is given in the file name and furthermore there is a short description in every header of the scripts. There you can read about specific files you need before you can execute the script without any data issues.
 
-### Modules
+### Python Modules
 
-Apart from the instantiationg of the program in program.py, all functions and methods are outsourced in further modules:
+Apart from the instantiation of the program in program.py, all functions and methods are outsourced in further modules:
 
 * preprocessing (in the folder ./Common) containing all "spanning" functions that are implemented with standard python basically
 * pandashelper (in the folder ./Util) containing all direct data operations, implemented with specific data science functions from pandas mainly and numpy in part
