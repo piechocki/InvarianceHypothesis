@@ -28,8 +28,8 @@ For running the regressions, plotting results or doing some z-tests you can exec
 
 Apart from the instantiation of the program in program.py, all functions and methods are outsourced in further modules:
 
-* preprocessing (in the folder ./Common) containing all "spanning" functions that are implemented with standard python basically
-* pandashelper (in the folder ./Util) containing all direct data operations, implemented with specific data science functions from pandas mainly and numpy in part
+* preprocessing (in the folder ./Python/Common) containing all "spanning" functions that are implemented with standard python basically
+* pandashelper (in the folder ./Python/Util) containing all direct data operations, implemented with specific data science functions from pandas mainly and numpy in part
 
 These modules will be imported from the program.py already of course. You can access it's functions from the main program level via
 ```
